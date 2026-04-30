@@ -1,0 +1,5 @@
+/target
+/uploads
+/logs
+.env
+config/config.local.toml

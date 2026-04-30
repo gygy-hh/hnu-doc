@@ -1,0 +1,41 @@
+[server]
+name = "hnudoc"
+address = "0.0.0.0:8080"
+# 文件上传保存目录（相对于工作目录）
+upload_dir = "./uploads"
+# 单个文件最大字节数（默认 50MB）
+max_upload_size = 52428800
+
+[database]
+max_connections = 50
+# DATABASE_URL=mysql://用户名:密码@ip:端口/库名
+database_url = "mysql://root:password@127.0.0.1:3306/hnudoc"
+
+[redis]
+redis_url = "redis://127.0.0.1:6379/"
+
+[jwt]
+secret = "__hnudoc__jwt_secret__please_change_me__"
+# token 有效期（秒），默认 30 天
+expire_secs = 2592000
+
+[pow]
+# 工作量证明的前导零比特数。值越大越难
+zero_bits = 16
+# ticket 在 redis 中的有效期（秒）
+ticket_ttl = 300
+# 下载链接 token 的有效期（秒）
+download_ttl = 300
+
+[log]
+filter_level = "info"
+with_ansi = true
+to_stdout = true
+directory = "./logs"
+file_name = "hnudoc.log"
+rolling = "daily"
+format = "pretty"
+
+# 下面这些是 spider_2024 需要的配置（密码校验依赖之）
+[captcha]
+captcha_url = "http://127.0.0.1:9999"

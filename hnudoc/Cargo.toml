@@ -1,0 +1,68 @@
+[package]
+name = "hnudoc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[target.'cfg(not(windows))'.dependencies]
+openssl = { version = "0.10", features = ["vendored"] }
+
+[dependencies]
+spider_2024 = { path = "../../repos/back_2026/spider_2024" }
+
+# Web 框架
+salvo = { version = "0.80.0", features = ["cors", "logging", "serve-static"] }
+tokio = { version = "1.37.0", features = [
+    "rt-multi-thread",
+    "macros",
+    "signal",
+    "fs",
+] }
+
+# 数据库
+sqlx = { version = "0.8.2", features = [
+    "mysql",
+    "runtime-tokio",
+    "chrono",
+    "json",
+] }
+redis = { version = "0.28.2", default-features = false, features = [
+    "tokio-comp",
+    "aio",
+    "connection-manager",
+] }
+
+# 日志
+clia-tracing-config = "0.2.7"
+tracing = "0.1.40"
+
+# 序列化 / 反序列化
+serde = { version = "1.0.197", features = ["derive"] }
+serde_json = "1.0.115"
+toml = "0.8.12"
+
+# 错误处理
+anyhow = "1.0.81"
+thiserror = "1.0.58"
+
+# 鉴权 / 加密
+jsonwebtoken = "9.3.0"
+aes = "0.8.4"
+cbc = { version = "0.1.2", features = ["alloc", "std"] }
+base64 = "0.22.1"
+md5 = "0.7.0"
+rand = "0.8.5"
+rand_core = { version = "0.6.4", features = ["std"] }
+
+# 工具
+once_cell = "1.21.3"
+chrono = { version = "0.4.37", features = ["serde"] }
+regex = { version = "1.11.1", default-features = false, features = [
+    "unicode-perl",
+] }
+uuid = { version = "1.22.0", features = ["v4"] }
+futures = "0.3.32"
+hex = "0.4.3"
+
+# PDF 页数解析
+lopdf = "0.32"
