@@ -1,5 +1,22 @@
+# Rust
 /target
-/uploads
-/logs
+**/target
+
+# Environment
 .env
+.env.*
 config/config.local.toml
+
+# Logs and data
+/logs
+/uploads
+/traffic_stats
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Build artifacts
+Cargo.lock  # 如果是库项目建议提交，当前为应用建议保留
