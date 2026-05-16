@@ -1,4 +1,4 @@
-//! `documents` 表的访问，以及聚合查询
+// documents 查询与写入
 
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
@@ -8,15 +8,15 @@ use sqlx::Row;
 use super::pool;
 use crate::{result::AppResult, utils};
 
-/// 资料日期，可能为 NULL 表示未知年份
+// 日期（未知年份则两项为空）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DocumentDate {
-    /// `year` / `semester` / `grade`
+    // year / semester / grade
     pub typ: String,
     pub year: i32,
 }
 
-/// 与前端一致的 Document 响应结构
+// 前端 Document DTO
 #[derive(Debug, Clone, Serialize)]
 pub struct Document {
     pub id: u32,
@@ -31,7 +31,7 @@ pub struct Document {
     pub categories: Vec<String>,
 }
 
-/// 数据库内部使用的完整记录（含 file_path）
+// 含 file_path、created_at
 #[derive(Debug, Clone)]
 pub struct DocumentRow {
     pub id: u32,
@@ -46,7 +46,7 @@ pub struct DocumentRow {
     pub md5: String,
     pub categories: Vec<String>,
     pub file_path: String,
-    /// 入库时间（当前 DTO 未返回给前端，保留作排查 / 以后扩展）
+    // 未映射到 DTO
     #[allow(dead_code)]
     pub created_at: NaiveDateTime,
 }
@@ -152,7 +152,7 @@ pub async fn get_by_ids(
     Ok(rows.into_iter().map(row_to_doc).collect())
 }
 
-/// 创建一条记录，返回新插入的 id
+// insert → id
 pub async fn insert(input: &NewDocument<'_>) -> AppResult<u32> {
     let res = sqlx::query(
         r#"
@@ -194,7 +194,7 @@ pub struct NewDocument<'a> {
     pub file_path: &'a str,
 }
 
-/// 关键字 + typ 列表 + 分页，按科目（name + 最新年份）聚合
+// 搜索聚合（科目维度）
 #[derive(Debug, Clone, Serialize)]
 pub struct SubjectAgg {
     pub name: String,
@@ -202,7 +202,7 @@ pub struct SubjectAgg {
     pub count: i64,
 }
 
-/// 用于搜索接口：按课程名称聚合
+// SubjectAgg：搜索列表项
 pub async fn search_subjects(
     key: Option<&str>,
     typs: &[String],
@@ -268,7 +268,7 @@ pub async fn search_subjects(
     Ok((list, total))
 }
 
-/// 按科目名称（可选 typ 过滤）查所有相关试卷
+// 科目下列全部试卷
 pub async fn list_by_subject(
     name: Option<&str>,
     typ: Option<&str>,

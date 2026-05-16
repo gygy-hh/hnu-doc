@@ -1,4 +1,4 @@
-//! 试卷上传 / 下载相关业务
+// 上传、PoW 下载
 
 use serde::Serialize;
 use serde_json::json;
@@ -14,14 +14,14 @@ use crate::{
 const POW_TICKET_PREFIX: &str = "hnudoc:pow:ticket:";
 const DOWNLOAD_TOKEN_PREFIX: &str = "hnudoc:download:token:";
 
-/// POST /document/download 的返回
+// download 接口：ticket + zero_bits
 #[derive(Debug, Serialize)]
 pub struct PowChallenge {
     pub ticket: String,
     pub zero: u32,
 }
 
-/// 用上传的字节流构造一份新的 Document，写入数据库
+// 写入 pending（重复 md5 → FILE_EXISTED）
 #[allow(clippy::too_many_arguments)]
 pub async fn save_pending_or_doc(
     bytes: &[u8],
@@ -85,7 +85,7 @@ pub async fn save_pending_or_doc(
     Ok(id)
 }
 
-/// 替换已上传文件的元数据（管理员），返回 (新 md5, 新页数, 新文件路径)
+// 管理员更新 pending 附件 → (md5, page, path)
 #[allow(clippy::too_many_arguments)]
 pub async fn build_pending_update(
     new_bytes: Option<&[u8]>,
@@ -130,7 +130,7 @@ pub async fn build_pending_update(
     }
 }
 
-/// 把 pending 的某条记录批准为正式 documents
+// pending → documents
 pub async fn promote_pending(
     p: &infra::mysql::pending::PendingDocumentRow,
 ) -> AppResult<u32> {
@@ -157,11 +157,7 @@ pub async fn promote_pending(
     Ok(id)
 }
 
-// ============================================================
-// PoW 下载流程
-// ============================================================
-
-/// 创建一个新的 PoW 挑战，把 (ticket, document_id) 放进 redis
+// PoW：ticket→redis→校验后发一次性下载 URL
 pub async fn create_pow(doc_id: u32) -> AppResult<PowChallenge> {
     // 先确认 doc 存在
     if infra::mysql::document::get_by_id(doc_id).await?.is_none() {
@@ -183,7 +179,7 @@ pub async fn create_pow(doc_id: u32) -> AppResult<PowChallenge> {
     })
 }
 
-/// 校验 PoW 并签发一次性下载 token，返回完整下载 URL（相对 URL）
+// PoW 通过后签发下载 token
 pub async fn consume_pow_and_issue_download(
     ticket: &str,
     key: &str,
@@ -221,7 +217,7 @@ pub async fn consume_pow_and_issue_download(
     Ok(format!("/document/file/{token}"))
 }
 
-/// 用 download token 取出 DocumentRow（不过期，但消费一次后失效）
+// 消费 download token（一次性）
 pub async fn consume_download_token(
     token: &str,
 ) -> AppResult<DocumentRow> {

@@ -10,7 +10,7 @@ use tokio::sync::OnceCell;
 
 static DB_POOL: OnceCell<MySqlPool> = OnceCell::const_new();
 
-/// 获取全局 MySQL 连接池，连接失败时退出进程
+// 全局连接池
 pub async fn pool() -> &'static MySqlPool {
     DB_POOL
         .get_or_init(|| async {

@@ -20,7 +20,7 @@ pub enum CacheEnum {
 }
 
 impl CacheEnum {
-    /// 缓存在moka中的超时时间
+    // moka TTL
     fn expire_after_fetch(&self) -> Option<Duration> {
         use CacheEnum::*;
         match self {

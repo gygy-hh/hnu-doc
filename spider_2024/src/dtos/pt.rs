@@ -1,15 +1,15 @@
 use serde::Deserialize;
 
-/// 个人门户密码验证结果
+// 个人门户密码验证结果
 #[derive(Debug)]
 pub enum CasPasswordStatus {
-    /// 密码正确
+    // 密码正确
     Success,
-    /// 密码错误
+    // 密码错误
     Fail,
-    /// 需要更换密码
+    // 需要更换密码
     ShouldChange,
-    /// 账号被锁定
+    // 账号被锁定
     Lock,
 }
 
@@ -34,19 +34,19 @@ pub struct CardInfoRes {
     pub balance: String,
 }
 
-/// 由代码推断的校园卡交易历史接口返回值
+// 由代码推断的校园卡交易历史接口返回值
 #[derive(Deserialize, Debug)]
 #[expect(non_snake_case)]
 pub struct CardHistoryRes {
-    /// 总额
+    // 总额
     pub amt: f64,
-    /// 交易数量，见下 CardHistoryReturn.TranCount
+    // 交易数量，见下 CardHistoryReturn.TranCount
     pub count: f64,
-    /// 交易项列表
+    // 交易项列表
     pub webTrjnDTO: Option<Vec<CardHistoryItem>>,
 }
 
-/// 一卡通历史账单
+// 一卡通历史账单
 #[derive(Deserialize, Debug)]
 #[expect(non_snake_case)]
 pub struct CardHistoryReturn {

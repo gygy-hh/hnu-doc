@@ -1,6 +1,4 @@
-//! 与参考后端一致的 AES-256-CBC + OpenSSL Salted__ 加密格式
-//!
-//! 用于将用户的个人门户密码加密后存入数据库。
+// OpenSSL 风格 AES-256-CBC（Salted__ + MD5 KDF）
 
 use aes::cipher::block_padding::Pkcs7;
 use aes::cipher::generic_array::GenericArray;
@@ -20,7 +18,6 @@ fn gen_salt() -> [u8; 8] {
     bytes
 }
 
-/// OpenSSL EVP_BytesToKey 派生 key/iv（伪代码见参考后端注释）
 #[inline]
 fn passphrase_to_key_and_iv(
     salt: &[u8],
@@ -42,7 +39,7 @@ fn passphrase_to_key_and_iv(
     (key, iv)
 }
 
-/// AES-256-CBC + Pkcs7 加密，输出符合 OpenSSL `Salted__` 格式的 Base64 字符串
+
 pub fn encrypt(data: &str) -> String {
     let salt = gen_salt();
     let (key, iv) = passphrase_to_key_and_iv(&salt, PASS_PHRASE);

@@ -1,6 +1,4 @@
-//! JWT：用学号生成 / 解析 token
-//!
-//! 与参考后端不同的是：HnuDoc 接口要求验证 token 是否过期。
+// JWT（校验过期）
 
 use jsonwebtoken::{
     DecodingKey, EncodingKey, Header, Validation, decode, encode,
@@ -40,7 +38,7 @@ fn now_secs() -> usize {
         .unwrap_or(0)
 }
 
-/// 用学号生成 token
+// 签发
 pub fn generate_jwt(stu_id: &str) -> AppResult<String> {
     let now = now_secs();
     let claims = Claims {
@@ -58,7 +56,7 @@ pub fn generate_jwt(stu_id: &str) -> AppResult<String> {
     Ok(token)
 }
 
-/// 解析 token 获得学号，过期 / 签名错误均返回 Unauthorized
+// 解析学号
 pub fn parse(token: &str) -> AppResult<String> {
     let res = decode::<Claims>(
         token,
@@ -68,10 +66,7 @@ pub fn parse(token: &str) -> AppResult<String> {
     Ok(utils::format_stuid(&res.claims.stu_id))
 }
 
-/// 从请求头里读取 Authorization 并验证。
-///
-/// HnuDoc 的前端可能把 token 直接放在 `Authorization` 里，
-/// 也可能写成 `Bearer <token>`，两种都要兼容。
+// Authorization：支持裸 token 或 Bearer
 pub fn auth(req: &mut Request) -> AppResult<String> {
     let raw = req
         .headers()

@@ -1,4 +1,4 @@
-//! `/document` 路由：上传 / 下载 / 列表 / 审核
+// document 路由
 
 use std::path::{Path, PathBuf};
 
@@ -39,11 +39,7 @@ pub fn routers() -> Router {
         )
 }
 
-// ============================================================
-// 解析 multipart 字段的辅助
-// ============================================================
-
-/// 提取 form 字段为字符串
+// multipart 解析
 fn field_str<'a>(
     form: &'a salvo::http::form::FormData,
     key: &str,
@@ -51,8 +47,7 @@ fn field_str<'a>(
     form.fields.get(key).map(|s| s.as_str())
 }
 
-/// HnuDoc.md 中的 `date` 字段定义：JSON 格式的对象 `{typ, year}`，
-/// 也可以传 `""` / `null` 表示未知年份。
+// date：JSON {typ,year} 或空
 fn parse_date_field(
     raw: Option<&str>,
 ) -> Result<(Option<String>, Option<i32>), AppError> {
@@ -121,7 +116,7 @@ fn extract_extension(path: &Path, file_name: Option<&str>) -> String {
         .unwrap_or_default()
 }
 
-/// 一次性从 multipart 中读出所有需要的字段
+// multipart → ParsedDocForm
 struct ParsedDocForm {
     bytes: Option<Vec<u8>>,
     extension: Option<String>,
@@ -208,9 +203,7 @@ async fn parse_doc_form(
     })
 }
 
-// ============================================================
-// POST /document   上传到待审核
-// ============================================================
+// POST /document
 
 #[handler]
 async fn upload_doc(req: &mut Request) -> RouterResult {
@@ -240,9 +233,7 @@ async fn upload_doc(req: &mut Request) -> RouterResult {
     Ok(serde_json::json!({ "pending_id": id }).into())
 }
 
-// ============================================================
-// POST /document/download   创建 PoW 挑战
-// ============================================================
+// POST /document/download
 
 #[handler]
 async fn create_pow(req: &mut Request) -> RouterResult {
@@ -257,9 +248,7 @@ async fn create_pow(req: &mut Request) -> RouterResult {
     Ok(res.into())
 }
 
-// ============================================================
-// GET /document/download   验证 PoW 拿到下载链接
-// ============================================================
+// GET /document/download
 
 #[handler]
 async fn get_download_link(req: &mut Request) -> RouterResult {
@@ -277,9 +266,7 @@ async fn get_download_link(req: &mut Request) -> RouterResult {
     Ok(url.into())
 }
 
-// ============================================================
-// GET /document/file/{token}   一次性下载链接
-// ============================================================
+// GET /document/file/:token
 
 #[handler]
 async fn download_file(req: &mut Request, res: &mut Response) {
@@ -308,7 +295,7 @@ async fn download_file(req: &mut Request, res: &mut Response) {
         return;
     }
 
-    // 用 salvo 自带的 NamedFile，自动处理 Range / Content-Type
+    // NamedFile：Range / Content-Type
     salvo::fs::NamedFile::builder(&path)
         .attached_name(format!("{}.{}", row.name, file_ext_from(&row.file_path)))
         .send(req.headers(), res)
@@ -319,7 +306,8 @@ fn file_ext_from(rel: &str) -> String {
     rel.rsplit_once('.').map(|x| x.1.to_string()).unwrap_or_default()
 }
 
-/// 给 AppError 加一个直接 render 到 Response 的便捷方法
+// AppError → Response
+
 trait RenderInto {
     fn render_into(self, res: &mut Response);
 }
@@ -331,9 +319,7 @@ impl RenderInto for AppError {
     }
 }
 
-// ============================================================
-// GET /document/pending   待审核列表（管理员；普通用户只能看自己的）
-// ============================================================
+// GET /document/pending
 
 #[handler]
 async fn list_pending(req: &mut Request) -> RouterResult {
@@ -378,9 +364,7 @@ async fn list_pending(req: &mut Request) -> RouterResult {
     Ok(list.into())
 }
 
-// ============================================================
-// PUT /document/pending/{id}   管理员更新已上传试卷信息
-// ============================================================
+// PUT /document/pending/:id
 
 #[handler]
 async fn update_pending(req: &mut Request) -> RouterResult {
@@ -429,9 +413,7 @@ async fn update_pending(req: &mut Request) -> RouterResult {
     Ok("OK".into())
 }
 
-// ============================================================
-// GET /document/pending/{id}   管理员评审
-// ============================================================
+// GET /document/pending/:id（评审）
 
 #[handler]
 async fn review_pending(req: &mut Request) -> RouterResult {

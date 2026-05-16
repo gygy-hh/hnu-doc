@@ -39,8 +39,7 @@ const LAB_SCORE_STRUCTURE_URL: &str = "http://10.62.106.112/XPK/StudentScoreSear
 const LAB_SCORE_DETAIL_URL: &str =
     "http://10.62.106.112/XPK/StudentScoreSearch/ShowScore";
 
-/// 专门用于请求实验平台的函数。该函数可以自动进行错误处理和处理 cookie 失效
-/// 注意，如果是密码错误或是没有密码，则直接返回 Ok(Value::Null)
+// 大物实验 API；密码错/缺密码 → Ok(Null)；自动换 cookie
 async fn request_lab(
     url: &str,
     stu_id: &str,
@@ -145,7 +144,7 @@ async fn request_lab(
     Ok(data)
 }
 
-/// 获取实验平台的课程列表（当前学期）
+// 本学期实验课表
 pub async fn get_lab_list(
     stu_id: &str,
 ) -> Result<Value, crate::Error> {
@@ -164,9 +163,7 @@ pub async fn get_lab_list(
     Ok(res)
 }
 
-/// 检查实验平台的密码是否正确
-/// tuple.0 是响应数据，tuple.1 是登录后获取的所有 cookie
-/// 自动处理了验证码
+// 验密 + 验证码；(Json, cookies)
 pub async fn check_password(
     stu_id: &str,
     password: &str,
@@ -220,7 +217,7 @@ pub async fn check_password(
     Err(anyhow!("解析验证码失败").into())
 }
 
-/// 获取实验平台的学期信息
+// 学期字典
 pub async fn get_sem_info(
     stu_id: &str,
 ) -> Result<Value, crate::Error> {
@@ -229,8 +226,7 @@ pub async fn get_sem_info(
     Ok(res)
 }
 
-/// 获取某个学期的课程列表（附带了课程的总评成绩）
-/// 其中的 sem 参数是学期的 id，需要通过 get_sem_info 获取
+// 某学期课程+总评（sem 来自学期接口）
 pub async fn get_course_list(
     stu_id: &str,
     sem: &str,
@@ -249,8 +245,7 @@ pub async fn get_course_list(
     Ok(res)
 }
 
-/// 获取某个课程的实验成绩详情
-/// 这里面应该是包含了虚拟实验的。但是貌似虚拟实验的成绩接口能得到最新成绩
+// 单次实验成绩明细
 pub async fn get_lab_score(
     stu_id: &str,
     sem: &str,
@@ -271,8 +266,7 @@ pub async fn get_lab_score(
     Ok(res)
 }
 
-/// 获取虚拟实验的成绩
-/// 虚拟实验的接口有点奇怪，经过测试，无论学期和课程id怎么给，都会返回一个学期的虚拟实验的成绩
+// 虚拟实验成绩（参数实际影响弱）
 pub async fn get_virtual_lab_score(
     stu_id: &str,
 ) -> Result<Value, crate::Error> {
@@ -292,7 +286,7 @@ pub async fn get_virtual_lab_score(
     Ok(res)
 }
 
-/// 获取课程的成绩结构
+// 成绩结构树
 pub async fn get_score_structure(
     stu_id: &str,
     course_id: &str,
@@ -303,7 +297,7 @@ pub async fn get_score_structure(
     Ok(res)
 }
 
-/// 获取课程的成绩详情
+// 成绩结构下明细
 pub async fn get_score_detail(
     stu_id: &str,
     course_id: &str,

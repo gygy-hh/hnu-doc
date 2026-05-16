@@ -1,5 +1,4 @@
-//! 本地文件存储：把上传的试卷写到 `upload_dir`，
-//! 文件名使用 `<md5>.<ext>`（同名直接覆盖）。
+// 上传目录：<md5>.<ext>
 
 use std::path::{Path, PathBuf};
 
@@ -7,13 +6,13 @@ use tokio::{fs, io::AsyncWriteExt};
 
 use crate::{config::CFG, result::AppResult};
 
-/// 计算字节流的 md5（小写十六进制）
+// md5 hex
 pub fn md5_hex(bytes: &[u8]) -> String {
     let d = md5::compute(bytes);
     hex::encode(d.0)
 }
 
-/// 确保上传目录存在
+// mkdir uploads
 pub async fn ensure_dir() -> AppResult<()> {
     let p = Path::new(&CFG.server.upload_dir);
     if !p.exists() {
@@ -22,7 +21,7 @@ pub async fn ensure_dir() -> AppResult<()> {
     Ok(())
 }
 
-/// 把文件保存到 `upload_dir/<md5>.<ext>`，返回相对路径（即 `<md5>.<ext>`）
+// 写入并返回相对文件名
 pub async fn save_bytes(
     bytes: &[u8],
     md5: &str,
@@ -43,14 +42,14 @@ pub async fn save_bytes(
     Ok(filename)
 }
 
-/// 给定相对路径，得到完整本地路径
+// 绝对路径
 pub fn absolute_path(relative: &str) -> PathBuf {
     let mut p = PathBuf::from(&CFG.server.upload_dir);
     p.push(relative);
     p
 }
 
-/// 删除某个相对路径下的文件，找不到时不报错（如替换/拒绝 pending 时可用）
+// 删文件（不存在忽略）
 #[allow(dead_code)]
 pub async fn remove(relative: &str) -> AppResult<()> {
     let p = absolute_path(relative);

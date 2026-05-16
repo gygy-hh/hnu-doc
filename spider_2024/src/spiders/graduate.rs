@@ -1,4 +1,4 @@
-//! 注意，研究生是用不了体测系统和本科生教务系统爬虫的
+// 研究生课表（无本科教务/体测）
 
 use std::{collections::HashMap, sync::LazyLock};
 
@@ -53,32 +53,20 @@ static END_MAP: LazyLock<HashMap<u8, &str>> = LazyLock::new(|| {
     .collect()
 });
 
-/// 用来兼容本科生的爬虫返回数据
+// 本科生课表结构兼容
 #[derive(Serialize, Debug)]
 struct Course {
-    /// 开始时间
     djjssj: String,
-    /// 结束时间
     djkssj: String,
-    /// 课程地点
     js_name: String,
-    /// 课程名称
     kc_name: String,
-    /// 课程id  
     ktmc_name: String,
-    /// 周次
     pkzcmx: String,
-    /// 节次
     jczy01501ids: String,
-    /// 教师名称
     teachernames: String,
-    /// 星期几
     pksj: String,
-    /// 课程id
     id: String,
-    /// 不知道干嘛的，目前一直是空
     skqk: String,
-    // 无用，留空
     jczy013id: String,
 }
 

@@ -1,4 +1,4 @@
-//! 使用此库通过 use crate::utils::client; 即可，在mod.rs中已pub use导出
+// HTTP 客户端（见 mod re-export）
 
 use reqwest::{
     Client,
@@ -10,10 +10,7 @@ use std::{sync::LazyLock, time::Duration};
 
 use super::cache::{CACHE, CacheEnum};
 
-/// 只在Debug模式才生成一个全局的学号信息，方便调试
-///
-/// 本地测试时请注意：确认你使用的是校园网环境，
-/// 没有开启代理，且DNS使用了校园网DNS（例如202.197.96.1）
+// Debug 下占位学号；本地须校园网 DNS、关代理
 #[cfg(debug_assertions)]
 #[cfg_attr(not(test), expect(unused))]
 pub static STU_ID: LazyLock<String> =
@@ -21,24 +18,24 @@ pub static STU_ID: LazyLock<String> =
 
 pub static CLIENT: LazyLock<Client> = LazyLock::new(|| {
     Client::builder()
-        // 需要忽略无效证书，因为图书馆的https证书是寄的，而采用http请求的话cas下发的ticket不被图书系统接受
+        // 图书馆证书异常；HTTP ticket 受限故仍走 HTTPS
         .danger_accept_invalid_certs(true)
         .connection_verbose(false)
-        // 设置超时是重要的，避免超时中间件触发后任务仍在进行
+        // 统一超时，配合网关超时中间件
         .timeout(Duration::from_secs(6))
         .connect_timeout(Duration::from_secs(2))
         .pool_idle_timeout(Duration::from_secs(20))
-        .pool_max_idle_per_host(2000)    // 部署到生产环境一定要适当调整，Linux系统默认TCP上限是1024，本程序大致访问6个host左右，设置一个合理值不要超过上限，如系统没有网络调优情况下可设置为100
-        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36")  // 必须加才会通过cas的验证
+        .pool_max_idle_per_host(2000) // 生产按 FD 上限收紧
+        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36") // CAS 校验需要浏览器 UA
         // .user_agent("reqwest/0.12.8")
-        .no_proxy() // 禁止代理，防止调试时候系统代理的影响
-        .redirect(Policy::none()) // 禁止自动重定向方便操作，目前有几个接口依赖于禁止重定向，因此不能直接允许重定向
+        .no_proxy()
+        .redirect(Policy::none()) // 部分登录流程手写重定向
         // .http1_title_case_headers()
         .build()
         .expect("构建client失败")
 });
 
-/// 项目的cookie_parser，旨在只保留key=value的字符串形式
+// Set-Cookie → key=value 列表
 #[inline]
 pub fn cookie_parser(cookie: GetAll<HeaderValue>) -> Vec<String> {
     cookie

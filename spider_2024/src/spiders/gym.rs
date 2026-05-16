@@ -4,21 +4,14 @@ use crate::{
 };
 use serde_json::Value;
 
-/// 这个URL能返回体测各个项目的数据（例如跳远多少米等），
-/// 但不能得到每个项目对总分的贡献
-///
-/// see also [`RAW_DATA_URL`]
+// DATA_URL：分项数值；RAW_DATA_URL：分项得分
 const DATA_URL: &str = "http://gymos.hnu.edu.cn/bdlp_api_fitness_test_student_h5/public/index.php/index/Report/getStudentScore";
-/// 这个URL在湖大系统前端仅用于获取视力信息
-///
-/// 然而我们发现这个接口也能返回其他体测项目的*得分*
-///
-/// see also [`DATA_URL`]
+// RAW_DATA_URL：视力接口也可拿各项得分
 const RAW_DATA_URL: &str = "http://gymos.hnu.edu.cn/bdlp_api_fitness_test_student_h5/public/index.php/index/Report/getEyeDetails";
 const APPOINT_URL: &str = "http://gymos.hnu.edu.cn/bdlp_api_fitness_test_student_h5/public/index.php/index/Appoint/getStudentClass";
 const DETAIL_URL: &str = "http://gymos.hnu.edu.cn/bdlp_api_fitness_test_student_h5/public/index.php/index/Appoint/getSchoolFitClassDetail";
 
-/// 获取体测数据，不含每个项目的得分
+// 体测分项数据（无单项得分）
 pub(crate) async fn get_data(
     stu_id: &str,
     xn: u16,
@@ -43,7 +36,7 @@ pub(crate) async fn get_data(
     Ok(res)
 }
 
-/// 获取体测原始数据，含每个项目的得分
+// 原始数据含得分
 pub(crate) async fn get_raw_data(
     stu_id: &str,
     xn: u16,
@@ -68,7 +61,7 @@ pub(crate) async fn get_raw_data(
     Ok(res)
 }
 
-/// 获取体测预约数据
+// 预约列表
 pub(crate) async fn get_appoint(
     stu_id: &str,
 ) -> Result<Value, crate::Error> {
@@ -91,7 +84,7 @@ pub(crate) async fn get_appoint(
     Ok(res)
 }
 
-/// 获取体测预约详情
+// 预约详情
 pub(crate) async fn get_appoint_detail(
     stu_id: &str,
     class_id: &str,

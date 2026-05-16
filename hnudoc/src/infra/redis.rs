@@ -1,4 +1,4 @@
-//! Redis 连接，与参考后端一致使用 ConnectionManager
+// Redis ConnectionManager
 
 use std::time::Duration;
 

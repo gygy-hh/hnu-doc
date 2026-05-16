@@ -45,6 +45,11 @@ async fn run() {
     tracing::info!("📓 日志级别: {}", &CFG.log.filter_level);
     tracing::info!("🚀 {} 启动中", &CFG.server.name);
     tracing::info!("🔄 监听地址: {}", &CFG.server.address);
+    if CFG.dev.mock_login {
+        tracing::warn!(
+            "已启用 dev.mock_login：可用配置的测试账号跳过 CAS，切勿在生产环境使用"
+        );
+    }
 
     if let Err(e) = infra::storage::ensure_dir().await {
         tracing::error!("创建上传目录失败: {e}");

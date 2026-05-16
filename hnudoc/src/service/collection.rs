@@ -1,4 +1,4 @@
-//! 试卷集业务
+// 试卷集 CRUD 聚合
 
 use std::collections::HashMap;
 
@@ -18,7 +18,7 @@ pub struct Collection {
     pub items: Vec<Document>,
 }
 
-/// 列出所有试卷集，含每个试卷集下的文档列表
+// 全集 + 文档列表
 pub async fn list_all() -> AppResult<Vec<Collection>> {
     let cols = infra::mysql::collection::list_all().await?;
     if cols.is_empty() {

@@ -12,15 +12,13 @@ use log::error;
 use rand::Rng;
 use serde_json::Value;
 
-// 课表这里的课程信息接口是分页的，我这里设置了一页 50 条，应该没有人一学期超过 50 门课吧（）
-// 教务系统有点诡异，这个 pageSize 最好不要设置太大。我们发现，如果设置 200 这个特殊数字就会返回 html 的格式，其他数字都会返回 json 格式。具体原因不明，但是不建议太大，适量就好
-// 该 URL 缺少学期的参数，需要后续再 format
+// pageSize=50；勿过大以免返回 HTML；学期参数后续拼接
 const CLASS_TABLE_URL: &str = "http://hdjw.hnu.edu.cn/jsxsd/xskb/xskb_list.do?viweType=1&needData=1&pageNum=1&pageSize=50&viweType=1&demoStr=&needData=1&baseUrl=%2Fjsxsd&sfykb=2&xsflMapListJsonStr=%E8%AE%B2%E8%AF%BE%E5%AD%A6%E6%97%B6%2C%E6%8C%87%E5%AF%BC%E5%AD%A6%E6%97%B6%2C%E5%AE%9E%E9%AA%8C%E5%AD%A6%E6%97%B6%2C%E5%85%B6%E4%BB%96%2C&zc=&kbjcmsid=1";
-// 无课表课程
+// 无课表课程列表
 const CLASS_TABLE_EXTRA: &str = "http://hdjw.hnu.edu.cn/jsxsd/xskb/xskb_list.do?viweType=2&needData=1&pageNum=1&pageSize=20&viweType=2&demoStr=&needData=1&baseUrl=%2Fjsxsd&sfykb=1&xsflMapListJsonStr=%E8%AE%B2%E8%AF%BE%E5%AD%A6%E6%97%B6%2C%E6%8C%87%E5%AF%BC%E5%AD%A6%E6%97%B6%2C%E5%AE%9E%E9%AA%8C%E5%AD%A6%E6%97%B6%2C%E5%85%B6%E4%BB%96%2C&zc=&kbjcmsid=1";
-// 课程成绩查询接口。其他说明同上
+// 成绩列表（同上分页约定）
 const GRADE_URL: &str = "http://hdjw.hnu.edu.cn/jsxsd/kscj/cjcx_list?pageNum=1&pageSize=50&kcxz=&kcsx=&kcmc=&xsfs=all&sfxsbcxq=1";
-// 总成绩排名接口
+// 成绩排名
 const GRADE_RANK_URL: &str = "http://hdjw.hnu.edu.cn/jsxsd/xscjsq/cjpmcx_list.do?&pageNum=1&pageSize=20&kclx=&kcly=1";
 const EMPTY_CLASSROOM_URL: &str =
     "http://hdjw.hnu.edu.cn/jsxsd/kbxx/jsjy_query2";
@@ -33,7 +31,7 @@ enum RequestMethod {
     Post(HashMap<&'static str, String>),
 }
 
-/// 专门用于请求教务系统的函数。该函数可以自动进行错误处理和处理 cookie 失效
+// 教务 JSON；HTML 视为 cookie 失效并重试
 #[expect(clippy::too_many_lines, reason = "REFACTOR ME")]
 async fn request_hdjw(
     url: &str,
@@ -122,7 +120,7 @@ async fn request_hdjw(
         }
         let body = body.unwrap();
         if body.contains("window.initQzTable") {
-            // 说明是课程分数详情的响应，我们特殊处理对待一下
+            // 详情页 HTML
             return Ok(Value::String(body));
         }
         let json = serde_json::from_str::<Value>(&body);
@@ -132,15 +130,12 @@ async fn request_hdjw(
                 "({}) 解析教务系统响应失败: err = {}; body = {}; stuid = {}",
                 tried, e, body, stu_id
             ));
-            // 这种情况（200 返回码但不是 json 格式（应该是 html 格式））大概是 cookie
-            // 过期，我们清理缓存
+            // 非 JSON → 多半 cookie 过期
             CACHE.invalidate(&(CacheEnum::Hdjw, stu_id.into())).await;
             continue;
         }
         let json = json.unwrap();
-        // 典型的 cookie 失效时的 response body：
-        // {"flag1":2,"msgContent":"è¯·å…ˆç™»å½•ç³»ç»Ÿ"}
-        // 这里只判断 flag1 字段，因为 msgContent 是乱码，不好说
+        // flag1=2 → 未登录乱码页
         if let Some(Value::Number(flag1)) = json.get("flag1")
             && flag1.as_i64() == Some(2)
         {
@@ -158,7 +153,7 @@ async fn request_hdjw(
     Ok(data)
 }
 
-/// 获取课表信息
+// 课表
 pub async fn get_class_table(
     stu_id: &str,
     xn: u16,
@@ -175,7 +170,7 @@ pub async fn get_class_table(
     Ok(res)
 }
 
-/// 获取课程成绩
+// 课程成绩
 pub async fn get_grade(
     stu_id: &str,
     xn: u16,
@@ -186,29 +181,7 @@ pub async fn get_grade(
     Ok(res)
 }
 
-/// 获取成绩排名的内部通用方法，其他的方法都是基于此方法的wrapper包装。并且目前只查主修课程
-///
-/// `selection`: 学期列表，item格式为"xxxx-xxxx-x"，如"2023-2024-1"
-///
-/// `range`: 课程范围，目前有如下选择：
-///
-///  * 全部课程：01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,88
-///  * 必修课程：01,02,03,04,08,10,11,12,16
-///  * 20 版核心课方案：08,12,16
-///  * 24 版核心课方案: 03,16
-///
-/// 上述编号中，其中 07 表示马克思主义经典，09 表示科学与艺术经典，13 表示西方经典，14
-/// 表示中国经典，18 表示其他，88 表示国际化，这些应该都属于选修课的一部分？
-/// 10 表示实践环节，应该视为必修课的一部分？
-///
-/// `rank`: 排名方式，目前有如下选择：
-///
-///  * 绩点：3
-///  * 加权平均：2
-///  * 算数平均：4
-///
-/// 返回一个 tuple，其中第一个元素表示排名，第二个元素表示对应的成绩。
-/// 如果请求成功但是解析数据时出现了问题，那么会返回一个 ("无数据", "无数据") 的元组。
+// 排名：selection 如 2023-2024-1；range 课程类别代码拼接；rank 2 加权 3 绩点 4 算术
 #[inline]
 pub async fn get_grade_rank_common(
     stu_id: &str,
@@ -296,7 +269,7 @@ pub async fn get_grade_rank_common(
     Ok(res)
 }
 
-/// 获取考试安排
+// 考试安排
 pub async fn get_exam_schedule(
     stu_id: &str,
     xn: u16,
@@ -315,9 +288,7 @@ pub async fn get_exam_schedule(
     Ok(res)
 }
 
-/// 获取空教室信息
-///
-/// `jc`: 节次
+// 空教室（jc 节次）
 pub async fn get_empty_classroom(
     stu_id: &str,
     xn: u16,
@@ -344,8 +315,7 @@ pub async fn get_empty_classroom(
     Ok(res)
 }
 
-/// 从可信电子凭证获取成绩
-/// 返回成绩单 pdf 的文本内容，具体解析交给后端
+// CA 成绩单 PDF → 文本
 pub async fn get_grade_from_ca(
     stu_id: &str,
 ) -> Result<String, crate::Error> {
@@ -387,8 +357,7 @@ pub async fn get_grade_from_ca(
     Ok(pdf)
 }
 
-/// 获取课程具体的成绩详情
-/// 返回的是 html 格式，需要交给后端来解析
+// 课程成绩详情 HTML
 pub async fn get_grade_detail(
     stu_id: &str,
     jx0404id: &str,
@@ -402,7 +371,7 @@ pub async fn get_grade_detail(
     }
 }
 
-/// 获取无课表课程
+// 无课表课程
 pub async fn get_class_table_extra(
     stu_id: &str,
     xn: u16,

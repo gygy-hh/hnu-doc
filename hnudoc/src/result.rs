@@ -1,10 +1,4 @@
-//! HnuDoc 的统一响应类型与错误类型
-//!
-//! 与参考后端不同，HnuDoc 的接口约定使用 `status` 字段表示请求结果：
-//! - 成功时 `status = "OK"`
-//! - 失败时 `status = <错误代码>`，例如 `PASSWORD_ERROR`、`POW_KEY_INVALID`
-//!
-//! 失败时若有附加数据可放入 `data`，可读信息放入 `msg`。
+// 统一 JSON：成功 status=OK，失败 status=错误码；msg/data 可选
 
 use anyhow::anyhow;
 use salvo::http::StatusCode;
@@ -14,29 +8,20 @@ use serde::Serialize;
 use serde_json::{Value, json};
 use thiserror::Error;
 
-/// 业务侧通用错误代码
+// 业务错误码
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ErrCode {
-    /// 通用未授权（缺少/无效 token）
     Unauthorized,
-    /// 个人门户密码错误
     PasswordError,
-    /// 该账号没有绑定湖大微生活
     #[allow(dead_code)]
     NotBindWeihuda,
-    /// 该账号被禁止使用试卷库
     PermissionDenied,
-    /// 文件已经存在（上传重复）
     FileExisted,
-    /// 文件超出大小限制
     FileSizeLimitExceeded,
-    /// POW 计算的 key 错误（同时 ticket 也失效）
     PowKeyInvalid,
-    /// 资源不存在
     NotFound,
-    /// 参数错误
     BadRequest,
-    /// 自定义错误代码（透传到前端）
     #[allow(dead_code)]
     Custom(&'static str),
 }
@@ -73,48 +58,36 @@ impl ErrCode {
     }
 }
 
-/// 自定义错误类型
 #[derive(Error, Debug)]
 pub enum AppError {
-    /// 未知错误，500
     #[error("服务器内部错误: {0:?}")]
     AnyHow(#[from] anyhow::Error),
-    /// 参数解析错误
     #[error("参数解析错误: {0}")]
     SalvoParseError(#[from] salvo::http::ParseError),
-    /// 与 Salvo 解析失败区分时的占位，路由层可显式返回
     #[error("参数解析错误")]
     #[allow(dead_code)]
     ParseError,
-    /// 数据库错误
     #[error("数据库 SQL 执行错误: {0}")]
     SqlxError(#[from] sqlx::Error),
-    /// JWT 错误
     #[error("JWT 编解码错误: {0}")]
     JwtError(#[from] jsonwebtoken::errors::Error),
-    /// JSON 错误
     #[error("解析 JSON 错误: {0}")]
     JsonParseError(#[from] serde_json::Error),
-    /// IO 错误
     #[error("IO 错误: {0}")]
     IoError(#[from] std::io::Error),
-    /// Redis 错误
     #[error("Redis 错误: {0}")]
     RedisError(#[from] redis::RedisError),
-    /// 业务侧错误（带错误代码 + 附加数据）
     #[error("{code:?}: {msg}")]
     Biz {
         code: ErrCode,
         msg: String,
         data: Value,
     },
-    /// 请求超时
     #[error("请求超时")]
     TimeoutError,
 }
 
 impl AppError {
-    /// 构造一个不附带 data 的业务错误
     pub fn biz(code: ErrCode, msg: impl Into<String>) -> Self {
         Self::Biz {
             code,
@@ -123,7 +96,6 @@ impl AppError {
         }
     }
 
-    /// 构造一个附带 data 的业务错误
     pub fn biz_with_data(
         code: ErrCode,
         msg: impl Into<String>,
@@ -165,7 +137,7 @@ impl From<spider_2024::Error> for AppError {
     }
 }
 
-/// 成功响应：`{"status":"OK","data":<value>,"msg":null}`
+// OK 响应包装
 pub struct Success(Value);
 
 impl<T: Serialize> From<T> for Success {

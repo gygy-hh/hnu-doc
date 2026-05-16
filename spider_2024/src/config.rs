@@ -39,16 +39,26 @@ fn try_config_file(config_file: &str) -> Result<Configs, String> {
 impl Configs {
     pub fn init() -> Self {
         let config_file_candidates = vec![
+            "config/config.local.toml",
+            concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../config/config.local.toml"
+            ),
+            concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/config/config.local.toml"
+            ),
+            "../config/config.local.toml",
             "config/config.toml",
+            concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../config/config.toml"
+            ),
             concat!(
                 env!("CARGO_MANIFEST_DIR"),
                 "/config/config.toml"
             ),
             "../config/config.toml",
-            concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../config/config.toml"
-            ),
         ];
 
         for config_file in config_file_candidates {
@@ -69,7 +79,7 @@ impl Configs {
             }
         }
 
-        // 若到达此处，说明 for 循环已完成且未返回，即所有候选配置文件都不可用
+        // 无可用配置
         panic!("[!] No valid configuration file found!");
     }
 }

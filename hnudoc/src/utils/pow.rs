@@ -1,16 +1,8 @@
-//! 工作量证明（Proof of Work）
-//!
-//! 服务端下发：
-//! - `ticket`：随机字符串
-//! - `zero`：要求计算出来的 hash 前 `zero` 个比特全为 0
-//!
-//! 客户端任务：找一个字符串 `s`，使得 `MD5(ticket || s)` 的前 `zero`
-//! 比特为 0。我们约定客户端最终上送的 `key = ticket + s`，所以这里
-//! 同时校验 `key` 是否以 `ticket` 开头。
+// PoW：验证 MD5(key) 前 zero 位为 0，且 key 以 ticket 为前缀
 
 use rand::{Rng, distributions::Alphanumeric};
 
-/// 生成一个 24 位的随机 ticket
+// 随机 ticket
 pub fn gen_ticket() -> String {
     rand::thread_rng()
         .sample_iter(&Alphanumeric)
@@ -19,9 +11,7 @@ pub fn gen_ticket() -> String {
         .collect()
 }
 
-/// 检查 `key` 是否满足 PoW：
-/// 1. `key` 以 `ticket` 为前缀
-/// 2. `MD5(key)` 的前 `zero` 个比特全为 0
+// 校验 PoW
 pub fn verify(key: &str, ticket: &str, zero: u32) -> bool {
     if !key.starts_with(ticket) {
         return false;
@@ -44,7 +34,7 @@ pub fn verify(key: &str, ticket: &str, zero: u32) -> bool {
 mod tests {
     use super::*;
 
-    /// 暴力寻找一个满足 zero 比特要求的 key（仅测试小 zero）
+    // 测试用暴力搜 key
     fn find_key(ticket: &str, zero: u32) -> String {
         for n in 0u64.. {
             let key = format!("{ticket}{n}");

@@ -1,6 +1,6 @@
 use crate::{dtos::xgxt::PersonInfo, spiders};
 
-/// TODO：学工系统获取个人信息的传输的数据量比较大，可能会成为性能瓶颈
+// TODO：学工个人信息接口数据量大
 pub async fn get_person_info_handler(
     stu_id: &str,
 ) -> Result<PersonInfo, crate::Error> {

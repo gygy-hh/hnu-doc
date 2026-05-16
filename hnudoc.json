@@ -1,0 +1,1146 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "默认模块",
+    "description": "",
+    "version": "1.0.0"
+  },
+  "tags": [],
+  "paths": {
+    "/collection": {
+      "get": {
+        "summary": "获取试卷集列表",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "title": "请求的状态信息",
+                      "description": "成功则为 OK，失败则为相应的错误代码。失败时 msg 保存可选的可读信息，data 里也可存放附加的字段。"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Collection"
+                      },
+                      "title": "负载数据"
+                    },
+                    "msg": {
+                      "type": "string",
+                      "title": "错误信息",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/search": {
+      "get": {
+        "summary": "搜索科目",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "query",
+            "description": "关键字，没有关键字的话",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "typ",
+            "in": "query",
+            "description": "见 Document 的 typ，可以传递多个",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "每页的数量，默认为 10",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "第几页，默认为 1",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "title": "请求的状态信息",
+                      "description": "成功则为 OK，失败则为相应的错误代码。失败时 msg 保存可选的可读信息，data 里也可存放附加的字段。"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "subjects": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "title": "科目名称"
+                              },
+                              "year": {
+                                "type": "integer",
+                                "title": "最新年份",
+                                "nullable": true
+                              },
+                              "count": {
+                                "type": "integer",
+                                "title": "包含试卷数量"
+                              }
+                            },
+                            "required": [
+                              "count",
+                              "name",
+                              "year"
+                            ]
+                          },
+                          "minItems": 5,
+                          "maxItems": 15
+                        },
+                        "pages": {
+                          "type": "integer",
+                          "title": "总页数"
+                        }
+                      },
+                      "required": [
+                        "subjects",
+                        "pages"
+                      ]
+                    },
+                    "msg": {
+                      "type": "string",
+                      "title": "错误信息",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/search/subject": {
+      "get": {
+        "summary": "搜索对应科目的试卷",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "科目名称",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "typ",
+            "in": "query",
+            "description": "见 Document 的 typ",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "title": "请求的状态信息",
+                      "description": "成功则为 OK，失败则为相应的错误代码。失败时 msg 保存可选的可读信息，data 里也可存放附加的字段。"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Document"
+                      },
+                      "title": "负载数据",
+                      "minItems": 5,
+                      "maxItems": 15
+                    },
+                    "msg": {
+                      "type": "string",
+                      "title": "错误信息",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/document/download": {
+      "post": {
+        "summary": "下载试卷",
+        "deprecated": false,
+        "description": "使用工作量证明来防止被攻击。\n\n服务端下发 ticket 值和 zero 值，客户端需要在 ticket 值后面接任意字符串来确保计算出来的 hash 值的前 zero 位为 0.",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "要下载试卷的 id",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "title": "请求的状态信息",
+                      "description": "成功则为 OK，失败则为相应的错误代码。失败时 msg 保存可选的可读信息，data 里也可存放附加的字段。"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "ticket": {
+                          "type": "string"
+                        },
+                        "zero": {
+                          "type": "integer"
+                        }
+                      },
+                      "title": "负载数据",
+                      "required": [
+                        "ticket",
+                        "zero"
+                      ]
+                    },
+                    "msg": {
+                      "type": "string",
+                      "title": "错误信息",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "get": {
+        "summary": "获取试卷下载链接",
+        "deprecated": false,
+        "description": "可能发生的错误：\n\n* POW_KEY_INVALID：计算的 key 是错误的。同时原来的 ticket 也失效，需要请求 POST /document/download 获得新的 ticket。",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "ticket",
+            "in": "query",
+            "description": "通过 POST /document/download 获得的 ticket 值",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "满足条件的字符串。字符串的前缀需要是 ticket",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "title": "请求的状态信息",
+                      "description": "成功则为 OK，失败则为相应的错误代码。失败时 msg 保存可选的可读信息，data 里也可存放附加的字段。"
+                    },
+                    "data": {
+                      "type": "string",
+                      "title": "负载数据",
+                      "description": "下载链接"
+                    },
+                    "msg": {
+                      "type": "string",
+                      "title": "错误信息",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/document": {
+      "post": {
+        "summary": "上传试卷",
+        "deprecated": false,
+        "description": "可能出现的错误：\n\n* FILE_EXISTED：文件已经存在，此时 data 字段包含对应重复的试卷的信息",
+        "tags": [],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "example": "",
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "date": {
+                    "description": "Document 的 date 的 json 格式",
+                    "example": "",
+                    "type": "string"
+                  },
+                  "typ": {
+                    "example": "",
+                    "type": "string"
+                  },
+                  "name": {
+                    "example": "",
+                    "type": "string"
+                  },
+                  "answer": {
+                    "type": "boolean",
+                    "example": ""
+                  },
+                  "tags": {
+                    "description": "Document 的 tags 的 json 格式",
+                    "example": "",
+                    "type": "string"
+                  },
+                  "comment": {
+                    "example": "",
+                    "type": "string"
+                  },
+                  "categories": {
+                    "description": "Document 的 categories 的 json 格式",
+                    "example": "",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file",
+                  "date",
+                  "typ",
+                  "name",
+                  "answer",
+                  "tags",
+                  "categories"
+                ]
+              },
+              "examples": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "title": "请求的状态信息",
+                      "description": "成功则为 OK，失败则为相应的错误代码。失败时 msg 保存可选的可读信息，data 里也可存放附加的字段。"
+                    },
+                    "data": {
+                      "title": "负载数据",
+                      "nullable": true,
+                      "oneOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ]
+                    },
+                    "msg": {
+                      "type": "string",
+                      "title": "错误信息",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/document/pending": {
+      "get": {
+        "summary": "获取已上传试卷列表",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "见 PendingDocument 的 status",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "默认为 1",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "默认为 10",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "title": "请求的状态信息",
+                      "description": "成功则为 OK，失败则为相应的错误代码。失败时 msg 保存可选的可读信息，data 里也可存放附加的字段。"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PendingDocument"
+                      },
+                      "title": "负载数据"
+                    },
+                    "msg": {
+                      "type": "string",
+                      "title": "错误信息",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/document/pending/{id}": {
+      "put": {
+        "summary": "更新已上传试卷信息",
+        "deprecated": false,
+        "description": "只有管理员才能更新。\n\n可能出现的错误：\n\n* FILE_SIZE_LIMIT_EXCEEDED：文件大小超出限制\n* FILE_EXISTED：文件已经存在，此时 data 字段包含对应重复的试卷的信息",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "description": "不附加就是不更改文件",
+                    "example": "",
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "date": {
+                    "description": "Document 的 date 的 json 格式",
+                    "example": "",
+                    "type": "string"
+                  },
+                  "typ": {
+                    "example": "",
+                    "type": "string"
+                  },
+                  "name": {
+                    "example": "",
+                    "type": "string"
+                  },
+                  "answer": {
+                    "type": "boolean",
+                    "example": ""
+                  },
+                  "tags": {
+                    "description": "Document 的 tags 的 json 格式",
+                    "example": "",
+                    "type": "string"
+                  },
+                  "comment": {
+                    "example": "",
+                    "type": "string"
+                  },
+                  "categories": {
+                    "description": "Document 的 categories 的 json 格式",
+                    "example": "",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "date",
+                  "typ",
+                  "name",
+                  "answer",
+                  "tags",
+                  "categories"
+                ]
+              },
+              "examples": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "title": "请求的状态信息",
+                      "description": "成功则为 OK，失败则为相应的错误代码。失败时 msg 保存可选的可读信息，data 里也可存放附加的字段。"
+                    },
+                    "data": {
+                      "title": "负载数据",
+                      "nullable": true,
+                      "oneOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ]
+                    },
+                    "msg": {
+                      "type": "string",
+                      "title": "错误信息",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "get": {
+        "summary": "评审已上传试卷",
+        "deprecated": false,
+        "description": "只有管理员才能审批。只能审批为 pending 状态的。",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "accepted 或是 rejected",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "comment",
+            "in": "query",
+            "description": "如果是 rejected，需要提供该字段，表示拒绝理由。",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "title": "请求的状态信息",
+                      "description": "成功则为 OK，失败则为相应的错误代码。失败时 msg 保存可选的可读信息，data 里也可存放附加的字段。"
+                    },
+                    "data": {
+                      "title": "负载数据",
+                      "nullable": true,
+                      "oneOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ]
+                    },
+                    "msg": {
+                      "type": "string",
+                      "title": "错误信息",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/user/login": {
+      "post": {
+        "summary": "登录",
+        "deprecated": false,
+        "description": "使用个人门户账号登录，后端将调用微生活的数据库进行鉴权。\n\n可能的比较特殊的错误情况：\n\n* PERMISSION_DENIED：表示该账号被禁止使用试卷库\n* NOT_BIND_WEIHUDA：该账号没有绑定湖大微生活\n* PASSWORD_ERROR：密码错误",
+        "tags": [],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "stuid": {
+                    "description": "学号",
+                    "example": "",
+                    "type": "string"
+                  },
+                  "password": {
+                    "description": "个人门户密码",
+                    "example": "",
+                    "type": "string"
+                  }
+                }
+              },
+              "examples": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "title": "请求的状态信息",
+                      "description": "成功则为 OK，失败则为相应的错误代码。失败时 msg 保存可选的可读信息，data 里也可存放附加的字段。"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "token": {
+                          "type": "string"
+                        },
+                        "user": {
+                          "$ref": "#/components/schemas/User"
+                        }
+                      },
+                      "title": "token",
+                      "required": [
+                        "token",
+                        "user"
+                      ]
+                    },
+                    "msg": {
+                      "type": "string",
+                      "title": "错误信息",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/user/logout": {
+      "get": {
+        "summary": "登出",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "title": "请求的状态信息",
+                      "description": "成功则为 OK，失败则为相应的错误代码。失败时 msg 保存可选的可读信息，data 里也可存放附加的字段。"
+                    },
+                    "data": {
+                      "title": "负载数据",
+                      "nullable": true,
+                      "oneOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ]
+                    },
+                    "msg": {
+                      "type": "string",
+                      "title": "错误信息",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/user/whoami": {
+      "get": {
+        "summary": "获取当前用户信息",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "title": "请求的状态信息",
+                      "description": "成功则为 OK，失败则为相应的错误代码。失败时 msg 保存可选的可读信息，data 里也可存放附加的字段。"
+                    },
+                    "data": {
+                      "title": "负载数据",
+                      "$ref": "#/components/schemas/User"
+                    },
+                    "msg": {
+                      "type": "string",
+                      "title": "错误信息",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Document": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "资料id"
+          },
+          "date": {
+            "type": "object",
+            "properties": {
+              "typ": {
+                "type": "string",
+                "title": "资料日期类型",
+                "description": "year: 表示在某一年考\nsemester: 表示对应课程是属于哪一年的学期（和 year 的区别主要在于秋季学期）\ngrade: 对应的哪一级学生"
+              },
+              "year": {
+                "type": "integer",
+                "title": "年份"
+              }
+            },
+            "required": [
+              "typ",
+              "year"
+            ],
+            "description": "为null表示未知年份",
+            "nullable": true
+          },
+          "typ": {
+            "type": "string",
+            "title": "资料类型",
+            "description": "final: 期末\nmid: 期中（含机考）\nother: 其他"
+          },
+          "name": {
+            "type": "string",
+            "title": "资料名称",
+            "description": "一般是课程名称"
+          },
+          "answer": {
+            "type": "boolean",
+            "title": "是否有答案"
+          },
+          "page": {
+            "type": "integer",
+            "title": "页数"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "title": "标签"
+          },
+          "comment": {
+            "type": "string",
+            "title": "说明",
+            "nullable": true
+          },
+          "md5": {
+            "type": "string",
+            "title": "文件md5摘要"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "title": "分类",
+            "description": "比如“A1”，“A2”这种"
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "typ",
+          "name",
+          "answer",
+          "page",
+          "tags",
+          "comment",
+          "md5",
+          "categories"
+        ]
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "stu_id": {
+            "type": "string",
+            "title": "学号"
+          },
+          "name": {
+            "type": "string",
+            "title": "姓名"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "title": "权限"
+          }
+        },
+        "required": [
+          "stu_id",
+          "name",
+          "permissions"
+        ]
+      },
+      "Collection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "title": "试卷集描述"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Document"
+            },
+            "title": "包含的试卷信息"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "items"
+        ]
+      },
+      "PendingDocument": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "item": {
+            "$ref": "#/components/schemas/Document"
+          },
+          "status": {
+            "type": "string",
+            "title": "审核状态",
+            "description": "pending: 正在审核。accepted: 审核通过。rejected: 审核不通过。"
+          },
+          "stu_id": {
+            "type": "string",
+            "title": "提交者"
+          },
+          "comment": {
+            "type": "string",
+            "title": "审核意见",
+            "description": "当审核不通过时该字段存在，表示不通过的原因",
+            "nullable": true
+          },
+          "create_time": {
+            "type": "string",
+            "title": "上传时间"
+          },
+          "update_time": {
+            "type": "string",
+            "title": "更新时间",
+            "description": "一般是审核状态更改之后才会更新 update_time"
+          },
+          "target": {
+            "type": "integer",
+            "title": "对应的资料库里的试卷id",
+            "description": "批准且系统将试卷处理完毕之后，将会把该试卷添加到正式的资料库中，然后设置该字段。",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "item",
+          "status",
+          "stu_id",
+          "comment",
+          "create_time",
+          "update_time",
+          "target"
+        ]
+      }
+    },
+    "responses": {},
+    "securitySchemes": {}
+  },
+  "servers": [],
+  "security": []
+}

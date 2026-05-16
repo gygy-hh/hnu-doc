@@ -13,7 +13,7 @@ pub fn routers() -> Router {
         .push(Router::with_path("subject").get(search_subject_docs))
 }
 
-/// `typ` 可以传多个，用 `,` 分隔，例如 `typ=final,mid`
+// typ 多选用逗号分隔
 fn parse_typs(raw: &str) -> Vec<String> {
     raw.split(',')
         .map(|s| s.trim())

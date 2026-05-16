@@ -1,4 +1,4 @@
-//! 待审核试卷业务
+// 待审核试卷
 
 use serde::Serialize;
 
@@ -7,8 +7,7 @@ use crate::{
     infra::mysql::document::{Document, build_date},
     result::{AppError, AppResult, ErrCode},
 };
-
-/// 与前端一致的 PendingDocument 响应结构
+// 前端 Pending DTO
 #[derive(Debug, Serialize)]
 pub struct PendingDocumentDto {
     pub id: u32,
@@ -29,8 +28,7 @@ pub fn to_dto(
     p: infra::mysql::pending::PendingDocumentRow,
 ) -> PendingDocumentDto {
     let item = Document {
-        // pending 中的 id 不是正式库 id，这里返回 target（如果已批准）
-        // 否则给 0 表示尚未在正式库中存在
+        // 展示用 id：已通过则用 target，否则 0
         id: p.target.unwrap_or(0),
         date: build_date(p.date_typ.clone(), p.date_year),
         typ: p.typ.clone(),
@@ -74,7 +72,7 @@ pub async fn get_by_id(
     })
 }
 
-/// 评审：accepted -> 把记录复制到 documents、设置 target；rejected -> 仅写状态
+// 上架 pending→documents / rejected 只改状态
 pub async fn review(
     id: u32,
     new_status: &str,

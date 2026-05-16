@@ -1,0 +1,45 @@
+# 复制为 config.local.toml 后按需修改：
+#   Copy-Item config/config.local.example.toml config/config.local.toml
+# 或使用 Docker：docker compose up -d，并保持下方 database_url / redis_url 与 compose 一致。
+
+[server]
+name = "hnudoc"
+address = "0.0.0.0:8080"
+upload_dir = "./uploads"
+max_upload_size = 52428800
+
+[database]
+max_connections = 50
+database_url = "mysql://root:hnudoc_dev@127.0.0.1:3306/hnudoc"
+
+[redis]
+redis_url = "redis://127.0.0.1:6379/"
+
+[jwt]
+secret = "__hnudoc__local_dev_only_change_for_prod__"
+expire_secs = 2592000
+
+[pow]
+zero_bits = 16
+ticket_ttl = 300
+download_ttl = 300
+
+[log]
+filter_level = "debug"
+with_ansi = true
+to_stdout = true
+directory = "./logs"
+file_name = "hnudoc.log"
+rolling = "daily"
+format = "pretty"
+
+[captcha]
+captcha_url = "http://127.0.0.1:9999"
+
+# 测试管理员：跳过 CAS，仅本地使用（上线前务必 mock_login = false 或删除本节）
+[dev]
+mock_login = true
+mock_stu_id = "admin"
+mock_password = "admin123"
+mock_name = "测试管理员"
+mock_permissions = ["search", "download", "upload", "review"]

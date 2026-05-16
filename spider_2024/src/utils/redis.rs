@@ -15,15 +15,7 @@ use super::db::get_password_from_db;
 pub static REDIS_CONN_MGR: OnceCell<ConnectionManager> =
     OnceCell::const_new();
 
-/// # Performance
-///
-/// 按照[`redis`]文档，异步Redis请求不需要连接池，可以使用多路复用。
-/// > For async connections, connection pooling isn't necessary.
-/// > The MultiplexedConnection is cloneable and can be used safely from multiple threads,
-/// > so a single connection can be easily reused.
-/// > For automatic reconnections consider using ConnectionManager with the connection-manager
-/// > feature.
-/// > Async cluster connections also don't require pooling and are thread-safe and reusable.
+// 异步单连接即可（文档推荐 multiplex / ConnectionManager）
 pub async fn redis_conn_mgr() -> &'static ConnectionManager {
     REDIS_CONN_MGR
         .get_or_init(|| async {
@@ -31,9 +23,7 @@ pub async fn redis_conn_mgr() -> &'static ConnectionManager {
                 Client::open(CFG.redis.redis_url.clone())
                     .expect("连接redis失败"),
                 ConnectionManagerConfig::new()
-                    // 设置超时是重要的，避免超时中间件触发后任务仍在进行
                     .set_connection_timeout(Duration::from_secs(3))
-                    // 设置超时是重要的，避免超时中间件触发后任务仍在进行
                     .set_response_timeout(Duration::from_secs(3)),
             )
             .await

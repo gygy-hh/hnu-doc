@@ -1,4 +1,4 @@
-//! 兜底中间件：保证所有响应都是 HnuDoc 风格的 JSON
+// 兜底 JSON
 
 use anyhow::anyhow;
 use salvo::{

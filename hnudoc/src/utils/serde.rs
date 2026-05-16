@@ -1,11 +1,11 @@
-//! 序列化 / 反序列化辅助
+// serde 辅助
 
 use std::str::FromStr;
 
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 
-/// 把空字符串 `""` 当作 `None`，便于解析 query 参数
+// query 中空串视为 None
 pub fn empty_string_as_none<'de, D, T>(
     deserializer: D,
 ) -> Result<Option<T>, D::Error>

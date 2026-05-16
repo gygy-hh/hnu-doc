@@ -22,7 +22,7 @@ const CSRF_TOKEN_URL: &str =
 const PASSWORD_CHECK_URL: &str =
     "http://authority.hnu.cn/authority/services/simpleAuthWS?wsdl";
 
-// 这个函数已经废弃，不使用，改用 check_password_with_cas 代替
+// 已废弃 → check_password_with_cas
 #[cfg_attr(not(test), expect(unused))]
 pub async fn check_password(
     stu_id: &str,
@@ -95,7 +95,7 @@ pub async fn check_password_with_cas(
     }
 }
 
-/// 暂时不用这里的user_info
+// user_info 未用
 pub(crate) async fn get_user_info(
     stu_id: &str,
 ) -> Result<Value, crate::Error> {
@@ -144,9 +144,7 @@ pub async fn get_card_info(
     Ok(res)
 }
 
-/// 获取校园卡消费历史
-///
-/// `_type`: 消费还是充值，1代表是消费，其他代表是充值
+// 一卡通流水；_type：1 消费否则充值
 pub async fn get_card_history(
     stu_id: &str,
     year: &str,

@@ -41,7 +41,7 @@ pub async fn get_card_info_handler(
     Ok(res)
 }
 
-/// 返回消费/充值记录，需要注意消费总额默认是负数
+// 一卡通流水（消费额为负）
 pub async fn get_card_history_handler(
     req: CardHistoryReq,
 ) -> Result<CardHistoryReturn, crate::Error> {

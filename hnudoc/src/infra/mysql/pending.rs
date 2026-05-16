@@ -1,4 +1,4 @@
-//! `pending_documents` 表
+// pending_documents
 
 use chrono::NaiveDateTime;
 use serde_json::Value;
@@ -158,7 +158,7 @@ pub struct UpdatePending<'a> {
     pub comment: Option<&'a str>,
     pub md5: &'a str,
     pub categories: &'a [String],
-    /// 仅当替换文件时填充
+    // 换文件时才有
     pub file_path: Option<&'a str>,
 }
 

@@ -73,7 +73,7 @@ pub struct NetflowOrderRes {
     // pub ExtTraffic: f64,
     pub Month: String,
     // pub PayOrderCode: Option<String>,
-    /// 1:已支付 0:未支付
+    // 1:已支付 0:未支付
     // pub PayState: u32,
     pub RealOverTraffic: f64,
     pub ShouldPay: f64,

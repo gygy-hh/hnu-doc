@@ -1,10 +1,10 @@
-//! 复用 spider_2024 的 CAS 密码验证
+// CAS 密码校验（spider）
 
 use spider_2024::dtos::pt::CasPasswordStatus;
 
 use crate::result::{AppError, AppResult, ErrCode};
 
-/// 验证个人门户密码。失败时直接返回带错误代码的 [`AppError::Biz`]。
+// 门户验密
 pub async fn verify_password(
     stu_id: &str,
     password: &str,
@@ -29,7 +29,7 @@ pub async fn verify_password(
     }
 }
 
-/// 通过爬虫从学工系统获取个人信息（含姓名）
+// 学工个人信息
 pub async fn fetch_person_info(
     stu_id: &str,
 ) -> AppResult<spider_2024::dtos::xgxt::PersonInfo> {

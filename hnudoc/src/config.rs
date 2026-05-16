@@ -1,4 +1,4 @@
-//! 全局配置，懒加载，支持多个候选路径
+// 全局配置（懒加载，多路径候选）
 
 use once_cell::sync::Lazy;
 use serde::Deserialize;
@@ -12,6 +12,24 @@ pub struct Configs {
     pub jwt: Jwt,
     pub pow: Pow,
     pub log: Log,
+    /// 本地测试：跳过 CAS 的模拟账号（默认关闭）
+    #[serde(default)]
+    pub dev: Dev,
+}
+
+#[derive(Deserialize, Debug, Default)]
+pub struct Dev {
+    #[serde(default)]
+    pub mock_login: bool,
+    #[serde(default)]
+    pub mock_stu_id: String,
+    #[serde(default)]
+    pub mock_password: String,
+    #[serde(default)]
+    pub mock_name: String,
+    /// 为空则用 search/download/upload/review
+    #[serde(default)]
+    pub mock_permissions: Vec<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -67,14 +85,22 @@ fn try_config_file(path: &str) -> Result<Configs, String> {
 
 impl Configs {
     pub fn init() -> Self {
+        // 优先 config.local.toml
         let candidates = [
+            "config/config.local.toml",
+            concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../config/config.local.toml"
+            ),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/config/config.local.toml"),
+            "../config/config.local.toml",
             "config/config.toml",
-            concat!(env!("CARGO_MANIFEST_DIR"), "/config/config.toml"),
-            "../config/config.toml",
             concat!(
                 env!("CARGO_MANIFEST_DIR"),
                 "/../config/config.toml"
             ),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/config/config.toml"),
+            "../config/config.toml",
         ];
         for path in candidates {
             println!("[?] 尝试加载配置: {path}");
@@ -86,6 +112,7 @@ impl Configs {
                 Err(e) => println!("[!] {e}"),
             }
         }
+        // 无可用配置
         panic!("[!] 找不到任何可用的配置文件");
     }
 }

@@ -6,9 +6,7 @@ pub struct GymReq {
     pub xn: u16,
 }
 
-/// For deserialization of [`FitnessRes`]
-///
-/// If the value is None, return "0" instead.
+// FitnessRes：缺字段反序列化为 "0"
 fn none_to_zero<'de, D>(
     deserializer: D,
 ) -> Result<Option<String>, D::Error>
@@ -117,11 +115,8 @@ pub struct FitnessAppointRes {
     pub class_id: u32,
     pub button_status: u32,
     pub class_name: String,
-    /// 如：2025-12-15
     pub class_time: String,
-    /// 如：2025年12月15号（周一）
     pub show_time: String,
-    /// 如：10:00 - 11:30
     pub test_time: String,
 }
 

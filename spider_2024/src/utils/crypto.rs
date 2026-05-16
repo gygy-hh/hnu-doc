@@ -1,5 +1,5 @@
 #![allow(unused)]
-//! crypto_2024项目的库导出，方便直接调用，不再通过构建网络请求的方式
+// 校内各系统加解密（本地算法，非 HTTP）
 use aes::cipher::{
     self, BlockDecryptMut, BlockEncryptMut, KeyInit, KeyIvInit,
     block_padding::Pkcs7, generic_array::GenericArray,
@@ -21,7 +21,7 @@ const PASS_PHRASE: &str = "qnxg-crypto-2023";
 const GRADUATE_KEY: &str = "southsoft12345!#";
 const LAB_KEY: &str = "1234567891234567";
 
-/// 生成一个长度为8的随机salt
+// 随机 8 字节 salt
 #[inline]
 fn gen_salt() -> [u8; 8] {
     let mut rng = OsRng;
@@ -30,14 +30,7 @@ fn gen_salt() -> [u8; 8] {
     bytes
 }
 
-/// openssl的加密方式，使用md5生成Aes Cbc 256的key和iv，以下是伪代码
-/// ```text
-/// hash1_128 = MD5(Passphrase + Salt)
-/// hash2_128 = MD5(hash1_128 + Passphrase + Salt)
-/// hash3_128 = MD5(hash2_128 + Passphrase + Salt)
-/// Key = hash1_128 + hash2_128
-/// IV  = hash3_128;
-/// ```
+// OpenSSL EVP_BytesToKey 风格：三段 MD5 → key/iv
 #[inline]
 fn passphrase_to_key_and_iv(
     salt: &[u8],
@@ -59,9 +52,8 @@ fn passphrase_to_key_and_iv(
     (key, iv)
 }
 
-/// 加密函数，采用Aes256Cbc加密和Pkcs7填充
+// AES-256-CBC + PKCS7 + Salted__
 pub fn encrypt(data: &str) -> String {
-    // 生成一个长度为8的随机字符串
     let salt = gen_salt();
 
     let (key, iv) = passphrase_to_key_and_iv(&salt, PASS_PHRASE);
@@ -69,13 +61,13 @@ pub fn encrypt(data: &str) -> String {
     let iv = GenericArray::from_slice(iv.as_slice());
     let res = Aes256CbcEnc::new(key, iv)
         .encrypt_padded_vec_mut::<Pkcs7>(data.as_bytes());
-    // 添加 Salted__ 和 salt 前缀
+    // Salted__ + salt
     let prefix = b"Salted__";
     let res = [prefix, &salt, res.as_slice()].concat();
     base64.encode(&res)
 }
 
-/// 解密函数，可能会返回错误
+// 解密（UTF-8）
 pub fn decrypt(data: &str) -> Result<String> {
     let decode = base64.decode(data)?;
     if decode.len() < 16 {
@@ -90,7 +82,7 @@ pub fn decrypt(data: &str) -> Result<String> {
     Ok(String::from_utf8(res)?)
 }
 
-/// graduate研究生系统的解密函数
+// 研究生院 AES-128-ECB
 pub fn graduate_decrypt(data: &str) -> Result<String> {
     let decode = base64.decode(data)?;
     let key =
@@ -100,9 +92,7 @@ pub fn graduate_decrypt(data: &str) -> Result<String> {
     Ok(String::from_utf8(res)?)
 }
 
-/// graduate研究生系统的加密函数
-///
-/// 开发时用来调试
+// 研究生院加密（调试）
 pub fn graduate_encrypt(data: &str) -> String {
     let key =
         GenericArray::from_slice(&GRADUATE_KEY.as_bytes()[..16]);
@@ -111,7 +101,7 @@ pub fn graduate_encrypt(data: &str) -> String {
     base64.encode(&res)
 }
 
-/// 个人门户登录加密函数
+// 门户 CAS RSA（hex）
 pub(crate) fn rsa_encrypt(
     password: &str,
     exponent: &str,
@@ -127,7 +117,7 @@ pub(crate) fn rsa_encrypt(
     format!("{:0>128}", result_int.to_str_radix(16))
 }
 
-/// 教务系统的base64编码
+// 教务自定义 base64（QZDATASOFT 前缀）
 pub fn hdjw_encrypt(e: &str) -> String {
     if e.is_empty() {
         return String::new();
@@ -165,9 +155,7 @@ pub fn lab_encrypt(e: &str) -> String {
     base64.encode(p1.as_bytes())
 }
 
-/// 教务系统的base64解码
-///
-/// 开发时使用来调试
+// 教务解码（调试）
 fn hdjw_decrypt(e: &str) -> Option<String> {
     if !e.starts_with("QZDATASOFT") {
         return None;

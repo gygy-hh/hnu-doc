@@ -1,9 +1,4 @@
-//! 目前这个mod里，基本所有CACHE的读写方式，
-//! 都允许在缓存不命中或无效时并发重复尝试获取新的待缓存项。
-//! 不严格限制读写是有意的，
-//! 这是因为在压力测试中我发现锁会进一步降低爬虫成功处理请求的概率。
-//! 若要严格序列化读写，可使用[`moka::future::Cache::try_get_with`]或
-//! [`moka::future::OwnedKeyEntrySelector::and_try_compute_with`]
+// 登录缓存允许并发回填，避免锁拖垮成功率
 
 use std::sync::LazyLock;
 
@@ -26,8 +21,7 @@ use reqwest::{
 };
 use serde_json::{Value, json};
 
-// 定义请求需要用到的一些地址常量
-// 注意：这里的所有地址都必须是http的
+// CAS 常量（须 http）
 // const LOGO_URL: &str = "http://cas.hnu.edu.cn/favicon.ico";
 const _LOGIN_URL: &str = "http://cas.hnu.edu.cn/cas/login";
 const PUBKEY_URL: &str = "http://cas.hnu.edu.cn/cas/v2/getPubKey";
@@ -56,7 +50,7 @@ pub enum GetLoginParamsRes {
     Skip(String),         // 已经登录成立了自动跳转
 }
 
-/// 获取统一认证登录页提交密码所需的参数
+// 拉 CAS 登录表单参数
 #[inline]
 pub async fn get_login_params(
     service_url: &str,
@@ -145,23 +139,7 @@ pub async fn get_login_params(
     Ok(GetLoginParamsRes::Success(login_params))
 }
 
-/// 获取带有ticket的跳转链接，打开即可登录对应平台
-///
-/// # Arguments
-///
-/// - `stu_id`: 学号
-/// - `service_url`: cas 回调地址
-/// - `password`: 密码，可选，若不提供，则自动从数据库拉取密码。
-///
-/// # Returns
-///
-/// 跳转链接
-///
-/// # Side Effects
-///
-/// 如果函数执行成功，则会把函数内部获取到的 CasCookie 进行缓存，后续调用会尝试使用 CasCookie 减少登录流程。
-///
-/// 如果 `password` 不为 None，则该函数执行的整个过程都不会使用或者是设置 CasCookie 缓存
+// ticket URL；可选缓存 CasCookie；显式 password 则绕过缓存
 pub async fn get_ticket_url(
     stu_id: &str,
     service_url: &str,
@@ -196,8 +174,7 @@ pub async fn get_ticket_url(
     // Post登录表单
     let login = client
         .post(service_url)
-        // .header(CONTENT_TYPE, "application/x-www-form-urlencoded")   //
-        // 这个header会自动加上，不用手动加
+        // Content-Type 由 reqwest 自动带
         .header(COOKIE, &login_params.cookies.join("; "))
         .form(&[
             ("username", stu_id),
@@ -240,7 +217,7 @@ pub async fn get_ticket_url(
     to_return
 }
 
-/// 教务系统登录
+// 教务 hdjw Cookie
 pub async fn hdjw_headers(
     stu_id: &str,
 ) -> Result<HeaderMap, crate::Error> {
@@ -261,8 +238,7 @@ pub async fn hdjw_headers(
                 get_ticket_url(stu_id, HDJW_FROM_CAS_URL, None)
                     .await?;
             debug!("{stu_id} 尝试通过 {} 访问教务系统", ticket_url);
-            // 这里需要带着之前拿到的 cookies 去访问 ticket_url，不然会返回 500 internal server
-            // error
+            // ticket 请求需带前置 cookie，否则 500
             client
                 .get(ticket_url)
                 .header(COOKIE, &cookies)
@@ -310,24 +286,7 @@ pub async fn hdjw_headers(
     Ok(headers)
 }
 
-/// 个人门户登录
-///
-/// 这个函数还有个作用是可以用来进行密码检查
-///
-/// # Arguments
-///
-/// - `stu_id`: 学号
-/// - `password`: 密码，可选，若不提供，则自动从数据库拉取密码。
-///
-/// # Returns
-///
-/// 后续请求个人门户所需的 HeaderMap
-///
-/// # Side Effects
-///
-/// 如果函数执行成功，则会把函数内部获取到的 PtCookie 进行缓存
-///
-/// 如果 `password` 不为 None，则该函数执行的整个过程都不会使用或者是设置 PtCookie 缓存
+// 个人门户 Cookie；可纯验密；缓存 PtCookie
 pub async fn pt_headers(
     stu_id: &str,
     password: Option<&str>,
@@ -365,19 +324,7 @@ pub async fn pt_headers(
     Ok(headers)
 }
 
-/// 登录形如 <http://cas.hnu.edu.cn/application/sso.zf?login=B5712DC2FA281C96E053026B3E0A80A6> 这样的链接的服务
-///
-/// 最终将会返回一个 (s_ticket, cookies)，用于后续操作
-///
-/// 这种服务一般是出现在个人门户中，可以从个人门户直接免二次登录跳转过去，比如校园网和体测就是这样的
-///
-/// 在之前这里的代码是写在具体的 `netflow_headers` 和 `gym_headers_from_cas` 里面的，并且可能有不同的登录方式
-///
-/// 后来先是校园网系统需要用到这里这个函数的逻辑来进行登录，见 `5380fc7`
-///
-/// 然后发现体测系统也需要了，就把这个逻辑抽取出来放在这里了
-///
-/// 还发现，这里的重定向次数似乎是因人而异的，原因不明
+// sso.zf：手动跟重定向拿 s_ticket（网费/体测等）
 async fn get_sticket(
     stu_id: &str,
     url: &str,
@@ -388,13 +335,11 @@ async fn get_sticket(
         .get(&(CasCookie, stu_id.into()))
         .await
         .unwrap_or_default();
-    // 后面可能会进行多次重定向才能拿到 s_ticket，由于目前 client
-    // 关闭了跟随重定向，所以我们手动模拟
+    // client 禁止自动跳转，手动跟随
     let mut now_url = url.to_string();
     let mut cookies = cas_cache;
     let mut s_ticket = None;
-    // 分析的是大概重定向 4 次就可以拿到 s_ticket，为了保险起见多循环几次（中间拿到 s_ticket
-    // 就会 break）
+    // 至多 6 跳取 s_ticket
     for _ in 0..6 {
         if now_url.starts_with(
             "https://cas.hnu.edu.cn/sprcialapp/zf_form/index.zf",
@@ -442,7 +387,7 @@ async fn get_sticket(
     }
 }
 
-/// 获取校园网流量
+// 校园网流量页
 pub async fn netflow_headers(
     stu_id: &str,
 ) -> Result<HeaderMap, crate::Error> {
@@ -484,7 +429,7 @@ pub async fn netflow_headers(
     Ok(headers)
 }
 
-/// 体测系统比较特殊，不依赖于cas
+// 体测直连登录
 pub async fn gym_headers(
     stu_id: &str,
 ) -> Result<HeaderMap, crate::Error> {
@@ -517,7 +462,7 @@ pub async fn gym_headers(
     Ok(headers)
 }
 
-/// 从cas登录体测系统
+// 体测经 CAS
 pub async fn gym_headers_from_cas(
     stu_id: &str,
 ) -> Result<HeaderMap, crate::Error> {
@@ -553,7 +498,7 @@ pub async fn gym_headers_from_cas(
     Ok(headers)
 }
 
-/// 个人门户登录
+// 研究生 GMIS：Cookie + id
 pub async fn graduate_headers_and_id(
     stu_id: &str,
 ) -> Result<(HeaderMap, String), crate::Error> {
@@ -606,7 +551,7 @@ pub async fn graduate_headers_and_id(
     Ok((headers, id))
 }
 
-/// 可信电子凭证登录
+// CA 可信电子凭证
 pub async fn ca_headers(
     stu_id: &str,
 ) -> Result<HeaderMap, crate::Error> {
@@ -632,6 +577,7 @@ pub async fn ca_headers(
     Ok(headers)
 }
 
+// 学工 Cookie
 pub async fn xgxt_headers(
     stu_id: &str,
 ) -> Result<HeaderMap, crate::Error> {
@@ -669,9 +615,7 @@ pub async fn xgxt_headers(
     Ok(headers)
 }
 
-/// 大物实验平台登录
-/// 如果中间出现了密码错误或者是没有密码的情况，当前请求返回数据为 null，后端应该转发这个
-/// null，前端进行相应处理
+// 大物实验：密码错/无密码时返回 null，上层透传
 pub async fn lab_headers(
     stu_id: &str,
 ) -> Result<HeaderMap, crate::Error> {

@@ -1,4 +1,4 @@
-//! 搜索业务
+// 搜索与科目下列表
 
 use serde::Serialize;
 
@@ -14,7 +14,7 @@ pub struct SearchSubjectsRes {
     pub pages: u32,
 }
 
-/// 搜索科目（按 name 聚合）
+// 聚合分页搜索
 pub async fn search_subjects(
     key: Option<&str>,
     typs: &[String],
@@ -34,7 +34,7 @@ pub async fn search_subjects(
     Ok(SearchSubjectsRes { subjects, pages })
 }
 
-/// 列出某个科目下的全部试卷
+// 按科目列试卷
 pub async fn list_by_subject(
     name: Option<&str>,
     typ: Option<&str>,

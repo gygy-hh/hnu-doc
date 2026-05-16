@@ -1,4 +1,4 @@
-//! `users` 表的访问
+// users
 
 use chrono::NaiveDateTime;
 use serde_json::Value;
@@ -7,13 +7,13 @@ use sqlx::Row;
 use super::pool;
 use crate::{result::AppResult, utils};
 
-/// `users` 表的完整记录
+// 行数据（含密文）
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct UserRow {
     pub stu_id: String,
     pub name: String,
-    /// 加密密文，业务层未读取时由编译器标为未使用
+    // AES 密文
     pub password: String,
     pub permissions: Vec<String>,
     pub created_at: NaiveDateTime,
@@ -48,8 +48,7 @@ pub async fn get_by_stu_id(
     }))
 }
 
-/// 不存在则插入；存在则更新姓名 / 密码（保持 permissions 不变）。
-/// 默认权限：`["search","download","upload"]`。
+// upsert：改姓名/密码，权限默认 search,download,upload
 pub async fn upsert(
     stu_id: &str,
     name: &str,
@@ -82,8 +81,7 @@ pub async fn upsert(
     Ok(())
 }
 
-/// 给管理员或脚本调整权限时调用（当前未接 HTTP 接口）
-#[allow(dead_code)]
+// 更新 permissions（无 HTTP）
 pub async fn update_permissions(
     stu_id: &str,
     permissions: &[String],

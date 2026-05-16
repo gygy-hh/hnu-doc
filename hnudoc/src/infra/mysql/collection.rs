@@ -1,4 +1,4 @@
-//! `collections` 与 `collection_items` 表
+// collections
 
 use chrono::NaiveDateTime;
 use sqlx::Row;
@@ -15,7 +15,7 @@ pub struct CollectionRow {
     pub created_at: NaiveDateTime,
 }
 
-/// (collection_id, document_id, sort_order)
+// (collection_id, document_id, sort_order)
 #[derive(Debug, Clone)]
 pub struct CollectionItemRow {
     pub collection_id: u32,
@@ -45,7 +45,7 @@ pub async fn list_all() -> AppResult<Vec<CollectionRow>> {
         .collect())
 }
 
-/// 取所有 (collection_id, document_id) 关联，按 sort_order 排序
+// 全部关联行（有序）
 pub async fn list_all_items() -> AppResult<Vec<CollectionItemRow>> {
     let rows = sqlx::query(
         r#"
