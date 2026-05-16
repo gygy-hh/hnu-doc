@@ -12,6 +12,9 @@ config/config.local.toml
 /uploads
 /traffic_stats
 
+# 前端单独仓库维护，勿在本仓库跟踪
+/hnu-doc-frontend/
+
 # IDE and OS
 .vscode/
 .idea/

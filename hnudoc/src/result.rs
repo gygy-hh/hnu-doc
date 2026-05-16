@@ -115,28 +115,6 @@ impl From<&str> for AppError {
     }
 }
 
-impl From<spider_2024::Error> for AppError {
-    fn from(e: spider_2024::Error) -> Self {
-        use spider_2024::Error as SE;
-        match e {
-            SE::AnyHow(error) => Self::AnyHow(error),
-            SE::PasswordError => {
-                Self::biz(ErrCode::PasswordError, "密码错误")
-            }
-            SE::PasswordShouldChange => Self::biz(
-                ErrCode::PasswordError,
-                "请前往个人门户修改密码后重试",
-            ),
-            SE::PasswordLocked => Self::biz(
-                ErrCode::PasswordError,
-                "账号被锁定，请暂停使用 10 分钟后重试",
-            ),
-            SE::SqlxError(error) => Self::SqlxError(error),
-            SE::RedisErr(redis_error) => Self::RedisError(redis_error),
-        }
-    }
-}
-
 // OK 响应包装
 pub struct Success(Value);
 

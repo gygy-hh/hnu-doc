@@ -1,4 +1,4 @@
-// 全局配置（懒加载，多路径候选）
+// 全局配置
 
 use once_cell::sync::Lazy;
 use serde::Deserialize;
@@ -12,7 +12,7 @@ pub struct Configs {
     pub jwt: Jwt,
     pub pow: Pow,
     pub log: Log,
-    /// 本地测试：跳过 CAS 的模拟账号（默认关闭）
+    /// 本地测试：模拟账号登录（默认关闭）
     #[serde(default)]
     pub dev: Dev,
 }

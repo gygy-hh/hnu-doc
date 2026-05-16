@@ -4,16 +4,15 @@ HNU 文档管理系统 / 后端服务
 
 ## 项目介绍
 
-这是一个基于 Rust + Salvo 的 Web 服务项目，用于处理文档相关功能，包括 PDF 处理、JWT 鉴权、CAS 验证等。
+这是一个基于 Rust + Salvo 的 Web 服务项目，用于处理文档相关功能，包括 PDF 处理、JWT 鉴权等。
 
 ### 主要特性
 - Web 框架：Salvo 0.80
 - 数据库：MySQL + SQLx
 - 缓存：Redis
-- 认证：JWT + AES 加密
+- 认证：JWT + AES 加密；登录校验为本库 `users` 表密文（或通过 `dev.mock_login` 本地模拟）
 - PDF 处理：lopdf
 - 工作量证明 (PoW) 防刷
-- 集成 spider_2024 的 CAS 密码验证
 
 ## 快速开始
 

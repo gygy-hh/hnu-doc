@@ -1,13 +1,14 @@
-// OpenSSL 风格 AES-256-CBC（Salted__ + MD5 KDF）
+//  AES-256-CBC(盐 + MD5)
 
 use aes::cipher::block_padding::Pkcs7;
 use aes::cipher::generic_array::GenericArray;
-use aes::cipher::{BlockEncryptMut, KeyIvInit};
+use aes::cipher::{BlockDecryptMut, BlockEncryptMut, KeyIvInit};
 use base64::engine::Engine as _;
 use base64::engine::general_purpose::STANDARD as base64;
 use rand_core::{OsRng, RngCore};
 
 type Aes256CbcEnc = cbc::Encryptor<aes::Aes256>;
+type Aes256CbcDec = cbc::Decryptor<aes::Aes256>;
 
 const PASS_PHRASE: &str = "hnudoc-crypto-2026";
 
@@ -54,23 +55,24 @@ pub fn encrypt(data: &str) -> String {
     base64.encode(&out)
 }
 
+pub fn decrypt(data: &str) -> anyhow::Result<String> {
+    let raw = base64.decode(data)?;
+    if raw.len() < 16 || &raw[0..8] != b"Salted__" {
+        anyhow::bail!("密文格式无效");
+    }
+    let salt = &raw[8..16];
+    let (key, iv) = passphrase_to_key_and_iv(salt, PASS_PHRASE);
+    let key = GenericArray::from_slice(&key);
+    let iv = GenericArray::from_slice(&iv);
+    let plain = Aes256CbcDec::new(key, iv)
+        .decrypt_padded_vec_mut::<Pkcs7>(&raw[16..])
+        .map_err(|_| anyhow::anyhow!("解密失败"))?;
+    Ok(String::from_utf8(plain)?)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aes::cipher::BlockDecryptMut;
-
-    type Aes256CbcDec = cbc::Decryptor<aes::Aes256>;
-
-    fn decrypt(data: &str) -> Result<String, Box<dyn std::error::Error>> {
-        let raw = base64.decode(data)?;
-        let salt = &raw[8..16];
-        let (key, iv) = passphrase_to_key_and_iv(salt, PASS_PHRASE);
-        let key = GenericArray::from_slice(&key);
-        let iv = GenericArray::from_slice(&iv);
-        let plain = Aes256CbcDec::new(key, iv)
-            .decrypt_padded_vec_mut::<Pkcs7>(&raw[16..])?;
-        Ok(String::from_utf8(plain)?)
-    }
 
     #[test]
     fn round_trip() {

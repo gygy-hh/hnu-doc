@@ -47,7 +47,7 @@ async fn run() {
     tracing::info!("🔄 监听地址: {}", &CFG.server.address);
     if CFG.dev.mock_login {
         tracing::warn!(
-            "已启用 dev.mock_login：可用配置的测试账号跳过 CAS，切勿在生产环境使用"
+            "已启用 dev.mock_login：测试账号跳过数据库密码校验，切勿在生产环境使用"
         );
     }
 
