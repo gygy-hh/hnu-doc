@@ -8,8 +8,6 @@ license.workspace = true
 openssl = { version = "0.10", features = ["vendored"] }
 
 [dependencies]
-spider_2024 = { path = "../spider_2024" }
-
 # Web 框架
 salvo = { version = "0.80.0", features = ["cors", "logging", "serve-static"] }
 tokio = { version = "1.37.0", features = [
