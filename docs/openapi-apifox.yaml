@@ -1,0 +1,678 @@
+openapi: 3.0.0
+info:
+  title: HnuDoc 试卷库 API
+  description: |
+    后端统一 JSON 包装：`{ "status": "OK" | "<错误码>", "data": ..., "msg": ... }`。
+    业务失败时 HTTP 状态码与 `status` 字段可能为 401/403/400 等。
+
+    **认证**：除登录、`GET /ping`、`GET /document/file/{token}` 外，请求头需携带  
+    `Authorization: Bearer <JWT>`。
+
+    **登录**：当前为本地 `users` 表密文口令校验；账号须先入库或通过 `[dev] mock_login` 模拟登录（详见部署配置）。
+  version: "1.0.0"
+
+servers:
+  - url: http://127.0.0.1:8080
+    description: 本地默认
+
+tags:
+  - name: health检查
+  - name: 用户
+  - name: 试卷集
+  - name: 搜索
+  - name: 试卷与下载
+  - name: 待审核
+
+paths:
+  /ping:
+    get:
+      tags: [health检查]
+      summary: health检查
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WrappedString"
+
+  /user/login:
+    post:
+      tags: [用户]
+      summary: 登录
+      description: |
+        请求体字段：`stuid`、`password`。  
+        常见错误码：`PASSWORD_ERROR`、`PERMISSION_DENIED`、`NOT_BIND_WEIHUDA`（历史兼容，当前较少返回）。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+            example:
+              stuid: "2023000000"
+              password: "your-password"
+      responses:
+        "200":
+          description: 成功返回 token 与用户信息
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginOk"
+        "403":
+          description: 业务错误（密码错误、禁用等）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaseResponse"
+
+  /user/logout:
+    get:
+      tags: [用户]
+      summary: 登出（无状态占位）
+      description: JWT 无状态，前端丢弃 token 即可；接口返回 OK。
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WrappedString"
+
+  /user/whoami:
+    get:
+      tags: [用户]
+      summary: 当前用户信息
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WrappedUser"
+        "401":
+          description: 未携带或无效 token
+
+  /collection:
+    get:
+      tags: [试卷集]
+      summary: 试卷集列表（含条目）
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WrappedCollectionList"
+
+  /search:
+    get:
+      tags: [搜索]
+      summary: 分页搜索科目聚合
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: key
+          in: query
+          schema:
+            type: string
+          description: 关键词，可空
+        - name: typ
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 试卷类型，多选英文逗号分隔，例如 final,mid,other
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: 1–100
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WrappedSearchSubjects"
+
+  /search/subject:
+    get:
+      tags: [搜索]
+      summary: 某科目下试卷列表
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+          description: 科目名称
+        - name: typ
+          in: query
+          schema:
+            type: string
+          description: 单项筛选，可选；对应库内 typ 字段
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WrappedDocumentList"
+
+  /document:
+    post:
+      tags: [试卷与下载]
+      summary: 上传试卷（进入待审核）
+      security:
+        - bearerAuth: []
+      description: 需要 upload 权限；请求体为 multipart/form-data。
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [name, typ, file]
+              properties:
+                name:
+                  type: string
+                  description: 课程/试卷名称
+                typ:
+                  type: string
+                  enum: [final, mid, other]
+                date:
+                  type: string
+                  description: date 为 JSON 文本，含 typ(year或semester或grade) 与 year；空串表示未知
+                answer:
+                  type: string
+                  description: 布尔字符串 true false 1 0 yes no
+                tags:
+                  type: string
+                  description: JSON 数组文本（字符串形式的 JSON 数组）
+                categories:
+                  type: string
+                  description: JSON 数组字符串
+                comment:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+            encoding:
+              file:
+                contentType: application/octet-stream
+      responses:
+        "200":
+          description: 返回 pending_id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WrappedPendingId"
+
+  /document/download:
+    post:
+      tags: [试卷与下载]
+      summary: 创建 PoW 下载
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: 正式试卷 documents.id
+      responses:
+        "200":
+          description: ticket 与 zero_bits
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WrappedPowChallenge"
+    get:
+      tags: [试卷与下载]
+      summary: 校验 PoW，获取一次性下载路径
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ticket
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: key
+          in: query
+          required: true
+          schema:
+            type: string
+          description: PoW 计算结果
+      responses:
+        "200":
+          description: data 为相对路径字符串，形如 document/file/{token}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WrappedString"
+
+  /document/file/{token}:
+    get:
+      tags: [试卷与下载]
+      summary: 一次性下载文件（binary）
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 试卷文件流（Content-Type 由服务端根据扩展名决定）
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: token 无效或文件不存在
+
+  /document/pending:
+    get:
+      tags: [待审核]
+      summary: 待审核 / 已通过 / 已拒绝 列表
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [pending, accepted, rejected]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 10
+      description: 无 review 权限时仅返回当前用户自己的记录。
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WrappedPendingList"
+
+  /document/pending/{id}:
+    put:
+      tags: [待审核]
+      summary: 管理员更新待审核元数据/替换文件
+      security:
+        - bearerAuth: []
+      description: 需要 review 权限；file 可选，其余字段同上传。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                typ:
+                  type: string
+                date:
+                  type: string
+                answer:
+                  type: string
+                tags:
+                  type: string
+                categories:
+                  type: string
+                comment:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+            encoding:
+              file:
+                contentType: application/octet-stream
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WrappedStringOk"
+
+    get:
+      tags: [待审核]
+      summary: 审批（通过 / 拒绝）
+      security:
+        - bearerAuth: []
+      description: 需要 review 权限；拒绝时必须带 comment 参数。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: status
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [accepted, rejected]
+        - name: comment
+          in: query
+          schema:
+            type: string
+          description: status=rejected 时必填
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WrappedStringOk"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 登录接口返回的 token
+
+  schemas:
+    BaseResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: OK 或错误码
+        data:
+          type: object
+          nullable: true
+          description: 负载（可为任意 JSON，此处用 object 占位便于导入）
+          additionalProperties: true
+        msg:
+          type: string
+          nullable: true
+
+    WrappedString:
+      type: object
+      properties:
+        status:
+          type: string
+        data:
+          nullable: true
+          description: 常为 string，也可能为其它类型
+          type: string
+        msg:
+          type: string
+          nullable: true
+
+    WrappedStringOk:
+      type: object
+      properties:
+        status:
+          type: string
+        data:
+          nullable: true
+          type: string
+          description: 成功时常为字符串 OK
+        msg:
+          type: string
+          nullable: true
+
+    LoginBody:
+      type: object
+      required: [stuid, password]
+      properties:
+        stuid:
+          type: string
+        password:
+          type: string
+
+    User:
+      type: object
+      properties:
+        stu_id:
+          type: string
+        name:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+
+    LoginOk:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+        msg:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+            user:
+              $ref: "#/components/schemas/User"
+
+    WrappedUser:
+      type: object
+      properties:
+        status:
+          type: string
+        msg:
+          type: string
+          nullable: true
+        data:
+          $ref: "#/components/schemas/User"
+
+    DocumentDate:
+      type: object
+      properties:
+        typ:
+          type: string
+          enum: [year, semester, grade]
+        year:
+          type: integer
+
+    Document:
+      type: object
+      properties:
+        id:
+          type: integer
+        date:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/DocumentDate"
+        typ:
+          type: string
+        name:
+          type: string
+        answer:
+          type: boolean
+        page:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+        comment:
+          type: string
+        md5:
+          type: string
+        categories:
+          type: array
+          items:
+            type: string
+
+    Collection:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Document"
+
+    WrappedCollectionList:
+      type: object
+      properties:
+        status:
+          type: string
+        msg:
+          type: string
+          nullable: true
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Collection"
+
+    SubjectAgg:
+      type: object
+      properties:
+        name:
+          type: string
+        year:
+          type: integer
+          nullable: true
+        count:
+          type: integer
+          format: int64
+
+    SearchSubjectsData:
+      type: object
+      properties:
+        subjects:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubjectAgg"
+        pages:
+          type: integer
+
+    WrappedSearchSubjects:
+      type: object
+      properties:
+        status:
+          type: string
+        msg:
+          type: string
+          nullable: true
+        data:
+          $ref: "#/components/schemas/SearchSubjectsData"
+
+    WrappedDocumentList:
+      type: object
+      properties:
+        status:
+          type: string
+        msg:
+          type: string
+          nullable: true
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Document"
+
+    WrappedPendingId:
+      type: object
+      properties:
+        status:
+          type: string
+        msg:
+          type: string
+          nullable: true
+        data:
+          type: object
+          properties:
+            pending_id:
+              type: integer
+
+    PowChallenge:
+      type: object
+      properties:
+        ticket:
+          type: string
+        zero:
+          type: integer
+          description: PoW 难度（前导零比特数）
+
+    WrappedPowChallenge:
+      type: object
+      properties:
+        status:
+          type: string
+        msg:
+          type: string
+          nullable: true
+        data:
+          $ref: "#/components/schemas/PowChallenge"
+
+    PendingDocumentDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        item:
+          $ref: "#/components/schemas/Document"
+        status:
+          type: string
+        stu_id:
+          type: string
+        comment:
+          type: string
+          nullable: true
+        create_time:
+          type: string
+        update_time:
+          type: string
+        target:
+          type: integer
+          nullable: true
+          description: 通过后对应 documents.id
+
+    WrappedPendingList:
+      type: object
+      properties:
+        status:
+          type: string
+        msg:
+          type: string
+          nullable: true
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PendingDocumentDto"
