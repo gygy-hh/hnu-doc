@@ -36,10 +36,6 @@ file_name = "hnudoc.log"
 rolling = "daily"
 format = "pretty"
 
-# 下面这些是 spider_2024 需要的配置（密码校验依赖之）
-[captcha]
-captcha_url = "http://127.0.0.1:9999"
-
 # 本地测试账号（切勿在生产设为 true）
 [dev]
 mock_login = false

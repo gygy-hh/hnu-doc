@@ -33,10 +33,7 @@ file_name = "hnudoc.log"
 rolling = "daily"
 format = "pretty"
 
-[captcha]
-captcha_url = "http://127.0.0.1:9999"
-
-# 测试管理员：跳过 CAS，仅本地使用（上线前务必 mock_login = false 或删除本节）
+# 测试管理员：跳过密码校验，仅本地使用（上线前务必 mock_login = false 或删除本节）
 [dev]
 mock_login = true
 mock_stu_id = "admin"

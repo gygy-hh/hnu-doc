@@ -1,39 +1,18 @@
-// CAS 密码校验（spider）
+// 本地用户表密文密码校验（已不再调用校园网爬虫）
 
-use spider_2024::dtos::pt::CasPasswordStatus;
+use crate::{
+    infra::mysql::user::UserRow,
+    result::{AppError, AppResult, ErrCode},
+    utils,
+};
 
-use crate::result::{AppError, AppResult, ErrCode};
-
-// 门户验密
-pub async fn verify_password(
-    stu_id: &str,
-    password: &str,
-) -> AppResult<()> {
-    let status =
-        spider_2024::pt::check_password_handler(stu_id, password)
-            .await?;
-    match status {
-        CasPasswordStatus::Success => Ok(()),
-        CasPasswordStatus::Fail => Err(AppError::biz(
-            ErrCode::PasswordError,
-            "密码错误",
-        )),
-        CasPasswordStatus::ShouldChange => Err(AppError::biz(
-            ErrCode::PasswordError,
-            "请前往个人门户修改密码后重试",
-        )),
-        CasPasswordStatus::Lock => Err(AppError::biz(
-            ErrCode::PasswordError,
-            "账号被锁定，请暂停使用 10 分钟后重试",
-        )),
+pub fn verify_local_password(row: &UserRow, password: &str) -> AppResult<()> {
+    let plain = utils::crypto::decrypt(&row.password).map_err(|e| {
+        tracing::error!("解密存储密码失败: {e}");
+        AppError::biz(ErrCode::PasswordError, "登录校验失败")
+    })?;
+    if plain != password {
+        return Err(AppError::biz(ErrCode::PasswordError, "密码错误"));
     }
-}
-
-// 学工个人信息
-pub async fn fetch_person_info(
-    stu_id: &str,
-) -> AppResult<spider_2024::dtos::xgxt::PersonInfo> {
-    let info =
-        spider_2024::xgxt::get_person_info_handler(stu_id).await?;
-    Ok(info)
+    Ok(())
 }

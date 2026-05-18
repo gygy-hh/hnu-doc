@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["hnudoc", "spider_2024"]
+members = ["hnudoc"]
 
 [workspace.package]
 version = "0.1.0"
